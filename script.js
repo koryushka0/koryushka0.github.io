@@ -596,8 +596,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const nav = document.querySelector('.mobile-nav-panel');
     const overlay = document.querySelector('.overlay');
     const body = document.body;
-    const mobileSearchToggle = document.querySelector('.mobile-search-toggle');
-    const mobileSearchPanel = document.querySelector('.mobile-search-panel');
 
     if (burger && nav && overlay) {
         const closeMenu = () => {
@@ -610,16 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
             nav.classList.toggle('active');
             overlay.classList.toggle('active');
             body.classList.toggle('menu-open');
-            mobileSearchPanel.classList.remove('active');
         });
 
         overlay.addEventListener('click', closeMenu);
-    }
-
-    if (mobileSearchToggle && mobileSearchPanel) {
-        mobileSearchToggle.addEventListener('click', () => {
-            mobileSearchPanel.classList.toggle('active');
-        });
     }
 
     const observer = new IntersectionObserver((entries) => {
