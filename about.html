@@ -5,40 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Охота и Рыбалка - О компании</title>
     <link rel="icon" type="image/png" href="favicon.ico">
-    <link rel="manifest" href="manifest.json">
-        <script>
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            let deferredPrompt = e;
-            const installBanner = document.getElementById('install-banner');
-            const installBtn = document.getElementById('install-app-btn');
-            const closeBtn = document.getElementById('install-banner-close');
-
-            if (installBanner && installBtn && closeBtn) {
-                installBanner.style.display = 'flex';
-                setTimeout(() => {
-                    installBanner.classList.add('show');
-                }, 100);
-
-                installBtn.addEventListener('click', () => {
-                    installBanner.classList.remove('show');
-                    deferredPrompt.prompt();
-                });
-                
-                closeBtn.addEventListener('click', () => {
-                    installBanner.classList.remove('show');
-                });
-
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            }
-        });
-    </script>
-
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -54,6 +20,7 @@
                     <li><a href="delivery.html">Доставка</a></li>
                     <li><a href="about.html">О компании</a></li>
                     <li><a href="contacts.html">Контакты</a></li>
+                    <li><a href="install.html">Приложение</a></li>
                 </ul>
             </nav>
             <div class="header-icons">
@@ -146,21 +113,6 @@
 
     <script src="product_data.js"></script>
     <script src="script.js"></script>
-
-    <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                })
-                .catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-        });
-    }
-</script>
-
 
 </body>
 </html>

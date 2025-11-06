@@ -641,56 +641,83 @@ input.error, textarea.error {
 
 
 
-.install-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--surface);
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 1001;
-    transform: translateY(100%);
-    transition: transform 0.4s ease-in-out;
-    display: none; /* Изначально скрыт */
+
+
+
+
+/* === Стили для страницы установки приложения === */
+.install-page-section {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
 }
-.install-banner.show {
-    transform: translateY(0);
+
+.install-container {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+    background: var(--surface);
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
-.install-banner-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+
+.install-container .app-icon {
+    width: 128px;
+    height: 128px;
+    margin: 0 auto 1.5rem;
+    border-radius: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.install-banner-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
+
+.install-container h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 1rem;
 }
-.install-banner-text {
-    display: flex;
-    flex-direction: column;
-}
-.install-banner-text strong {
-    font-weight: 700;
-}
-.install-banner-text span {
-    font-size: 0.9rem;
+
+.install-container .tagline {
+    font-size: 1.1rem;
     color: #777;
+    margin-bottom: 2.5rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
 }
-.install-banner-close {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #aaa;
-    cursor: pointer;
+
+#install-app-btn {
+    padding: 1rem 2.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    min-width: 200px;
 }
-@media (max-width: 768px) {
-    .install-banner .btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
+
+#install-instructions {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    text-align: left;
+    font-size: 0.9rem;
+    color: #555;
+    display: none; /* Изначально скрыты */
+}
+
+#install-instructions h4 {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+#install-instructions ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#install-instructions li {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+#install-instructions strong {
+    color: var(--primary);
 }
