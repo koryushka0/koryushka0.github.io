@@ -380,20 +380,75 @@ document.addEventListener('DOMContentLoaded', () => {
             return isValid;
         };
 
-        orderForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (validateForm()) {
-                modal.innerHTML = `<div class="modal-content"><h2>Спасибо за заказ!</h2><p>Наш менеджер скоро свяжется с вами для подтверждения.</p></div>`;
-                cart = cart.filter(item => !item.selected);
-                saveData(); 
-                updateCounters();
-                renderCart();
-                setTimeout(() => { 
-                    modal.style.display = 'none';
-                    // window.location.href = 'index.html'; 
-                }, 3000);
-            }
-        });
+        orderForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (!validateForm()) {
+        return;
+    }
+
+    var submitButton = orderForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Отправка...';
+
+    var subtotalPriceText = document.getElementById('final-total-price').textContent;
+    var isCourier = document.querySelector('input[name="delivery"]:checked').value === 'courier';
+    
+    var deliveryCostNum = 0;
+    if (isCourier) {
+        var subtotalPrice = parseInt(subtotalPriceText.replace(/\s/g, ''));
+        deliveryCostNum = subtotalPrice >= 5000 ? 0 : 300;
+    }
+
+    var selectedItems = cart.filter(function(item) { return item.selected; });
+    var orderData = {
+        name: document.getElementById('customer-name').value,
+        phone: document.getElementById('customer-phone').value,
+        address: isCourier ? document.getElementById('customer-address').value : 'Самовывоз',
+        paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+        cashChange: document.getElementById('cash-change').value,
+        items: selectedItems.map(function(item) {
+            var product = productData.find(function(p) { return p.id === item.id; });
+            return {
+                name: product.name,
+                quantity: item.quantity,
+                price: (product.price * item.quantity).toLocaleString('ru-RU')
+            };
+        }),
+        deliveryCost: deliveryCostNum.toLocaleString('ru-RU'),
+        totalPrice: subtotalPriceText
+    };
+
+    fetch('https://klas0.pythonanywhere.com/submit-order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+    })
+    .then(function(response) {
+        if (!response.ok) {
+            return response.json().then(function(err) { throw new Error(JSON.stringify(err.message || 'Server error')); });
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        var modalContent = modal.querySelector('.modal-content');
+        modalContent.innerHTML = '<h2>Спасибо за заказ! (´-ω-`)</h2><p>Наш менеджер скоро свяжется с вами. Страница перезагрузится через несколько секунд...</p>';
+        
+        cart = cart.filter(function(item) { return !item.selected; });
+        saveData();
+
+        setTimeout(function() { 
+            window.location.reload();
+        }, 4000);
+    })
+    .catch(function(error) {
+        console.error('Ошибка отправки заказа:', error);
+        submitButton.disabled = false;
+        submitButton.textContent = 'Заказать';
+        alert('Произошла ошибка при отправке заказа. Пожалуйста, попробуйте еще раз.\n\nОшибка: ' + error.message);
+    });
+});
 
         checkoutBtn.addEventListener('click', () => {
             if (cart.filter(item => item.selected).length > 0) {
