@@ -645,79 +645,86 @@ input.error, textarea.error {
 
 
 
-/* === Стили для страницы установки приложения === */
+/* === Новые стили для страницы установки приложения === */
 .install-page-section {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
+    background: var(--bg-light);
+    display: flex;
+    align-items: center;
+    min-height: calc(100vh - 150px); /* Чтобы занимало почти весь экран */
+    padding: 2rem 0;
 }
 
-.install-container {
-    max-width: 700px;
+.install-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 4rem;
+    align-items: center;
+    max-width: 900px;
     margin: 0 auto;
-    text-align: center;
-    background: var(--surface);
-    padding: 3rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
 }
 
-.install-container .app-icon {
-    width: 128px;
-    height: 128px;
-    margin: 0 auto 1.5rem;
-    border-radius: 24px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.install-icon-wrapper {
+    display: flex;
+    justify-content: center;
 }
 
-.install-container h2 {
-    font-size: 2.5rem;
+.install-icon-wrapper .app-icon {
+    width: 200px;
+    height: 200px;
+    border-radius: 32px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.install-text-content h1 {
+    font-size: 3rem;
     font-weight: 800;
+    line-height: 1.1;
     color: var(--primary);
     margin-bottom: 1rem;
 }
 
-.install-container .tagline {
-    font-size: 1.1rem;
-    color: #777;
-    margin-bottom: 2.5rem;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
+.install-text-content .tagline {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 2rem;
 }
 
 #install-app-btn {
-    padding: 1rem 2.5rem;
-    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    min-width: 200px;
 }
 
 #install-instructions {
-    margin-top: 3rem;
-    padding-top: 2rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--border-color);
-    text-align: left;
     font-size: 0.9rem;
-    color: #555;
+    color: #777;
     display: none; /* Изначально скрыты */
 }
-
-#install-instructions h4 {
-    text-align: center;
-    font-weight: 700;
-    margin-bottom: 1rem;
+#install-instructions p {
+    margin-bottom: 0.5rem;
 }
-
-#install-instructions ul {
-    list-style: none;
-    padding-left: 0;
-}
-
-#install-instructions li {
-    margin-bottom: 1rem;
-    line-height: 1.6;
-}
-
 #install-instructions strong {
     color: var(--primary);
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    .install-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+    }
+    .install-icon-wrapper .app-icon {
+        width: 150px;
+        height: 150px;
+    }
+    .install-text-content h1 {
+        font-size: 2.5rem;
+    }
+    #install-instructions {
+        text-align: center;
+    }
 }
