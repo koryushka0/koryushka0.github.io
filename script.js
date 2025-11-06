@@ -403,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var orderData = {
         name: document.getElementById('customer-name').value,
         phone: document.getElementById('customer-phone').value,
+        comment: document.getElementById('customer-comment').value,
         address: isCourier ? document.getElementById('customer-address').value : 'Самовывоз',
         paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
         cashChange: document.getElementById('cash-change').value,
