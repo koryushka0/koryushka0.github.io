@@ -7,6 +7,39 @@
     <title>Охота и Рыбалка - Избранное</title>
     <link rel="icon" type="image/png" href="favicon.ico">
     <link rel="manifest" href="manifest.json">
+        <script>
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            let deferredPrompt = e;
+            const installBanner = document.getElementById('install-banner');
+            const installBtn = document.getElementById('install-app-btn');
+            const closeBtn = document.getElementById('install-banner-close');
+
+            if (installBanner && installBtn && closeBtn) {
+                installBanner.style.display = 'flex';
+                setTimeout(() => {
+                    installBanner.classList.add('show');
+                }, 100);
+
+                installBtn.addEventListener('click', () => {
+                    installBanner.classList.remove('show');
+                    deferredPrompt.prompt();
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    installBanner.classList.remove('show');
+                });
+
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        });
+    </script>
+
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -120,17 +153,6 @@
     }
 </script>
 
-<div id="install-banner" class="install-banner">
-    <div class="install-banner-content">
-        <img src="assets/icon-512.png" alt="App Icon" class="install-banner-icon">
-        <div class="install-banner-text">
-            <strong>Охота и Рыбалка</strong>
-            <span>Быстрый доступ с главного экрана</span>
-        </div>
-    </div>
-    <button id="install-app-btn" class="btn">Установить</button>
-    <button id="install-banner-close" class="install-banner-close">&times;</button>
-</div>
 
 </body>
 </html>
