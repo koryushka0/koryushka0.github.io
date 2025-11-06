@@ -681,11 +681,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initLiveSearch();
     updateCounters();
-});
 
 
-
-// --- ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
+    // --- ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
@@ -773,3 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Загружаем отзывы при открытии страницы
         fetchAndRenderReviews();
     }
+});
+
+
+
