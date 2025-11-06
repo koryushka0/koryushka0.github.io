@@ -683,3 +683,93 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCounters();
 });
 
+
+
+// --- ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
+    if (document.body.id === 'reviews-page') {
+        const reviewsContainer = document.getElementById('reviews-container');
+        const reviewForm = document.getElementById('review-form');
+        const reviewName = document.getElementById('review-name');
+        const reviewText = document.getElementById('review-text');
+
+        const fetchAndRenderReviews = async () => {
+            try {
+                const response = await fetch('https://klas0.pythonanywhere.com/get-reviews');
+                if (!response.ok) throw new Error('Ошибка загрузки отзывов');
+                
+                const reviews = await response.json();
+                
+                if (reviews.length === 0) {
+                    reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Отзывов пока нет. Будьте первым!</p>';
+                    return;
+                }
+
+                reviewsContainer.innerHTML = reviews.map(review => {
+                    const date = new Date(review.timestamp);
+                    const formattedDate = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    return `
+                        <div class="review-card">
+                            <div class="review-card-header">
+                                <span class="review-author">${review.name}</span>
+                                <span class="review-date">${formattedDate}</span>
+                            </div>
+                            <p class="review-text">${review.text}</p>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error(error);
+                reviewsContainer.innerHTML = '<p style="text-align: center; color: var(--accent-red);">Не удалось загрузить отзывы.</p>';
+            }
+        };
+
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Простая валидация
+            let isValid = true;
+            if (reviewName.value.trim() === '') {
+                reviewName.parentElement.querySelector('.error-message').textContent = 'Пожалуйста, введите ваше имя';
+                isValid = false;
+            } else {
+                reviewName.parentElement.querySelector('.error-message').textContent = '';
+            }
+            if (reviewText.value.trim() === '') {
+                reviewText.parentElement.querySelector('.error-message').textContent = 'Пожалуйста, напишите что-нибудь :)';
+                isValid = false;
+            } else {
+                reviewText.parentElement.querySelector('.error-message').textContent = '';
+            }
+            if (!isValid) return;
+
+            const submitButton = reviewForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Отправка...';
+
+            try {
+                const response = await fetch('https://klas0.pythonanywhere.com/add-review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: reviewName.value,
+                        text: reviewText.value
+                    })
+                });
+
+                if (!response.ok) throw new Error('Ошибка сервера при добавлении отзыва');
+
+                reviewForm.innerHTML = '<h4 style="text-align:center; color: var(--primary);">Спасибо! Ваш отзыв отправлен на модерацию. (. ❛ ᴗ ❛.)</h4>';
+                showNotification('Отзыв успешно отправлен!');
+
+            } catch (error) {
+                console.error(error);
+                showNotification('Не удалось отправить отзыв');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Отправить отзыв';
+            }
+        });
+
+        // Загружаем отзывы при открытии страницы
+        fetchAndRenderReviews();
+    }
