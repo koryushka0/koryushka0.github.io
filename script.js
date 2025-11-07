@@ -755,7 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let isValid = true;
             if (!ratingInput) { alert('Пожалуйста, поставьте оценку (звездочки)'); return; }
-            if (nameInput.value.trim() === '') { nameInput.parentElement.querySelector('.error-message').textContent = 'Введите имя'; isValid = false; } else { nameInput.parentElement.querySelector('.error-message').textContent = ''; }
             if (textInput.value.trim() === '') { textInput.parentElement.querySelector('.error-message').textContent = 'Напишите отзыв'; isValid = false; } else { textInput.parentElement.querySelector('.error-message').textContent = ''; }
             if (!isValid) return;
 
