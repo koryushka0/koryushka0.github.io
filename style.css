@@ -188,7 +188,7 @@ body.menu-open { overflow: hidden; }
 #catalog-title { text-align: left; margin: 0; }
 .sort-by-wrapper { position: relative; }
 .sort-by-wrapper::after { content: '▼'; font-size: 0.8rem; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
-#sort-by { appearance: none; -webkit-appearance: none; width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface); cursor: pointer; }
+#sort-by { margin-bottom: 10px; appearance: none; -webkit-appearance: none; width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--surface); cursor: pointer; }
 .cart-item-actions .remove-from-cart-btn svg { width: 20px; height: 20px; fill: #999; transition: fill 0.3s ease; }
 .cart-item-actions .remove-from-cart-btn:hover svg { fill: var(--primary); }
 .cart-item-actions .wishlist-btn svg { fill: none; stroke: var(--primary); stroke-width: 2; transition: all 0.3s ease; }
