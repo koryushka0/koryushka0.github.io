@@ -686,13 +686,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v4.0 ---
+// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v5.0 (с голосованием) ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
         const sortSelect = document.getElementById('reviews-sort');
         
         const API_BASE_URL = 'https://klas0.pythonanywhere.com';
+
+        // --- ЛОГИКА ID ПОЛЬЗОВАТЕЛЯ ---
+        let userId = localStorage.getItem('reviewUserId');
+        if (!userId) {
+            // Генерируем уникальный ID для этого браузера
+            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('reviewUserId', userId);
+        }
 
         const createStarRating = (rating) => {
             if (!rating) return '';
@@ -708,9 +716,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
             const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
+            
+            const score = (review.upvotes || 0) - (review.downvotes || 0);
+            let scoreClass = '';
+            if (score > 0) scoreClass = 'positive';
+            if (score < 0) scoreClass = 'negative';
 
             return `
                 <div class="review-card" id="review-${review.id}">
+                    <div class="review-voting">
+                        <button class="vote-btn up ${review.user_vote === 1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="1">
+                            <svg viewBox="0 0 24 24"><path d="M12 5l-8 8h16z"/></svg>
+                        </button>
+                        <span class="vote-score ${scoreClass}" id="score-${review.id}">${score > 0 ? '+' : ''}${score}</span>
+                        <button class="vote-btn down ${review.user_vote === -1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="-1">
+                            <svg viewBox="0 0 24 24"><path d="M12 19l8-8H4z"/></svg>
+                        </button>
+                    </div>
                     <div class="review-header">
                         ${review.is_admin_reply ? `${adminBadgeSVG}<span class="review-author admin">${review.name}</span>` : `<span class="review-author">${review.name}</span>`}
                     </div>
@@ -731,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortBy = sortSelect.value;
             reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Загрузка отзывов...</p>';
             try {
-                const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}`);
+                const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}&user_id=${userId}`);
                 if (!response.ok) throw new Error('Ошибка загрузки отзывов');
                 const reviews = await response.json();
                 
@@ -775,35 +797,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
                 
-                if (result.review) { // Если это админ
+                if (result.review) {
                     const newReviewHTML = createReviewHTML(result.review);
                     reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
                     reviewForm.reset();
                     showNotification('Ваш отзыв опубликован!');
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Отправить отзыв';
-                } else { // Если это обычный юзер
-                    // Создаем модальное окно "на лету"
+                } else {
                     const thanksModal = document.createElement('div');
                     thanksModal.className = 'modal';
                     thanksModal.style.display = 'flex';
-                    thanksModal.innerHTML = `
-                        <div class="modal-content">
-                            <h2>Спасибо за ваш отзыв! (. ❛ ᴗ ❛.)</h2>
-                            <p style="margin: 1rem 0; color: #555;">Он появится на сайте после проверки модератором. Страница скоро обновится.</p>
-                        </div>
-                    `;
+                    thanksModal.innerHTML = `<div class="modal-content"><h2>Спасибо за ваш отзыв! (. ❛ ᴗ ❛.)</h2><p style="margin: 1rem 0; color: #555;">Он появится на сайте после проверки модератором. Страница скоро обновится.</p></div>`;
                     document.body.appendChild(thanksModal);
-
-                    // Перезагружаем страницу через 4 секунды
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 4000);
+                    setTimeout(() => { window.location.reload(); }, 4000);
                 }
-
             } catch (error) {
                 console.error(error);
                 showNotification('Не удалось отправить отзыв');
+            } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Отправить отзыв';
             }
@@ -812,6 +822,50 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewsContainer.addEventListener('click', async (e) => {
             const target = e.target;
             
+            // --- ЛОГИКА ГОЛОСОВАНИЯ ---
+            const voteButton = target.closest('.vote-btn');
+            if (voteButton) {
+                const reviewId = voteButton.dataset.reviewId;
+                const voteType = parseInt(voteButton.dataset.voteType);
+                
+                voteButton.disabled = true; // Блокируем кнопку на время запроса
+                try {
+                    const response = await fetch(`${API_BASE_URL}/vote`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ review_id: reviewId, user_id: userId, vote_type: voteType })
+                    });
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.message);
+
+                    const scoreEl = document.getElementById(`score-${reviewId}`);
+                    const score = result.upvotes - result.downvotes;
+                    scoreEl.textContent = `${score > 0 ? '+' : ''}${score}`;
+                    scoreEl.className = 'vote-score';
+                    if (score > 0) scoreEl.classList.add('positive');
+                    if (score < 0) scoreEl.classList.add('negative');
+                    
+                    const parentCard = voteButton.closest('.review-card');
+                    const upBtn = parentCard.querySelector('.vote-btn.up');
+                    const downBtn = parentCard.querySelector('.vote-btn.down');
+                    
+                    upBtn.classList.remove('voted');
+                    downBtn.classList.remove('voted');
+
+                    const existingVote = voteButton.classList.contains('voted');
+                    if (!existingVote) {
+                        voteButton.classList.add('voted');
+                    }
+                } catch (error) { 
+                    console.error(error);
+                    showNotification('Ошибка голосования');
+                } finally {
+                    voteButton.disabled = false; // Разблокируем кнопку
+                }
+                return;
+            }
+
+            // --- ЛОГИКА ОТВЕТОВ ---
             if (target.classList.contains('show-replies-btn')) {
                 const parentId = target.dataset.parentId;
                 const repliesContainer = document.getElementById(`replies-for-${parentId}`);
@@ -820,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     target.textContent = `💬 Показать ответы (${repliesContainer.children.length})`;
                 } else {
                     try {
-                        const response = await fetch(`${API_BASE_URL}/get-replies?parent_id=${parentId}`);
+                        const response = await fetch(`${API_BASE_URL}/get-replies?parent_id=${parentId}&user_id=${userId}`);
                         const replies = await response.json();
                         repliesContainer.innerHTML = replies.map(createReviewHTML).join('');
                         repliesContainer.style.display = 'block';
@@ -828,7 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (error) {
                         console.error("Не удалось загрузить ответы:", error);
                         repliesContainer.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">Не удалось загрузить ответы. Попробуйте позже.</p>';
-                        repliesContainer.style.display = 'block'; 
+                        repliesContainer.style.display = 'block';
                     }
                 }
             }
@@ -837,7 +891,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parentId = target.dataset.parentId;
                 const authorToReply = target.dataset.author;
                 const formContainer = document.getElementById(`reply-form-for-${parentId}`);
-                
                 if (formContainer.innerHTML) {
                     formContainer.style.display = formContainer.style.display === 'block' ? 'none' : 'block';
                     return;
@@ -845,12 +898,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 formContainer.innerHTML = `
                     <form class="reply-form">
-                        <div class="form-group">
-                            <input type="text" class="reply-name" placeholder="Ваше имя" required>
-                        </div>
-                        <div class="form-group">
-                            <textarea placeholder="Напишите ваш ответ..." rows="3" required>@${authorToReply}, </textarea>
-                        </div>
+                        <div class="form-group"><input type="text" class="reply-name" placeholder="Ваше имя" required></div>
+                        <div class="form-group"><textarea placeholder="Напишите ваш ответ..." rows="3" required>@${authorToReply}, </textarea></div>
                         <div class="reply-form-buttons">
                             <button type="button" class="btn btn-secondary cancel-reply-btn">Отмена</button>
                             <button type="submit" class="btn">Отправить</button>
@@ -875,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const response = await fetch(`${API_BASE_URL}/add-review`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ name: name, text: text, parent_id: parentId })
+                            body: JSON.stringify({ name: name.trim(), text: text, parent_id: parentId })
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
@@ -883,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         formContainer.innerHTML = '';
                         formContainer.style.display = 'none';
 
-                        if (result.review) { // Если ответ от админа, он приходит сразу
+                        if (result.review) {
                             showNotification('Ваш ответ опубликован!');
                             const repliesContainer = document.getElementById(`replies-for-${parentId}`);
                             if (repliesContainer.style.display !== 'block') {
@@ -892,12 +941,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const newReplyHTML = createReviewHTML(result.review);
                                 repliesContainer.insertAdjacentHTML('beforeend', newReplyHTML);
                             }
-                        } else { // Если от юзера, уходит на модерацию
+                        } else {
                             showNotification('Ваш ответ отправлен на модерацию!');
                         }
-                    } catch (error) {
-                        showNotification('Ошибка отправки ответа');
-                    }
+                    } catch (error) { showNotification('Ошибка отправки ответа'); }
                 });
             }
         });
