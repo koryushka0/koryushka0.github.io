@@ -776,14 +776,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
                 
+                // Проверяем, прислал ли сервер нам данные нового отзыва (если это админ)
                 if (result.review) {
                     const newReviewHTML = createReviewHTML(result.review);
                     reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
-                    reviewForm.reset();
+                    reviewForm.reset(); // Просто сбрасываем форму
                     showNotification('Ваш отзыв опубликован!');
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Отправить отзыв';
                 } else {
-                    reviewForm.innerHTML = '<h4 style="text-align:center; color: var(--primary);">Спасибо! Ваш отзыв отправлен на модерацию. (. ❛ ᴗ ❛.)</h4>';
-                    showNotification('Отзыв успешно отправлен!');
+                    // Если это обычный юзер, показываем модальное окно
+                    const thanksModal = document.getElementById('review-thanks-modal');
+                    if(thanksModal) {
+                        thanksModal.style.display = 'flex';
+                        // И перезагружаем страницу через 4 секунды
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 4000);
+                    }
                 }
 
             } catch (error) {
