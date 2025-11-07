@@ -846,16 +846,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (score < 0) scoreEl.classList.add('negative');
                     
                     const parentCard = voteButton.closest('.review-card');
-                    const upBtn = parentCard.querySelector('.vote-btn.up');
-                    const downBtn = parentCard.querySelector('.vote-btn.down');
-                    
-                    upBtn.classList.remove('voted');
-                    downBtn.classList.remove('voted');
+                const upBtn = parentCard.querySelector('.vote-btn.up');
+                const downBtn = parentCard.querySelector('.vote-btn.down');
+                const wasVoted = voteButton.classList.contains('voted');
 
-                    const existingVote = voteButton.classList.contains('voted');
-                    if (!existingVote) {
-                        voteButton.classList.add('voted');
-                    }
+                // Сначала всегда убираем подсветку со всех кнопок в этом отзыве
+                upBtn.classList.remove('voted');
+                downBtn.classList.remove('voted');
+                
+                // А теперь решаем, нужно ли подсвечивать что-то заново
+                if (!wasVoted) {
+                    // Если мы ДО этого не голосовали, значит, мы поставили новый голос. Подсвечиваем.
+                    voteButton.classList.add('voted');
+                }
                 } catch (error) { 
                     console.error(error);
                     showNotification('Ошибка голосования');
