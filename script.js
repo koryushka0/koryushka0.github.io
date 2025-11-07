@@ -25,25 +25,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!container) return;
         const toast = document.createElement('div');
         toast.className = 'toast';
-        toast.innerHTML = `
-            <span class="toast-message">${message}</span>
-            <button class="toast-close">&times;</button>
-        `;
+        toast.innerHTML = `<span class="toast-message">${message}</span><button class="toast-close">&times;</button>`;
         container.appendChild(toast);
-
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 100);
-
+        setTimeout(() => toast.classList.add('show'), 100);
         const removeToast = () => {
             toast.classList.remove('show');
-            toast.addEventListener('transitionend', () => {
-                toast.remove();
-            }, { once: true });
+            toast.addEventListener('transitionend', () => toast.remove(), { once: true });
         };
-
         const autoRemoveTimeout = setTimeout(removeToast, 3000);
-
         toast.querySelector('.toast-close').addEventListener('click', () => {
             clearTimeout(autoRemoveTimeout);
             removeToast();
@@ -55,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (e) => {
                 const productId = parseInt(e.currentTarget.dataset.id);
                 const existingItem = cart.find(item => item.id === productId);
-
                 if (existingItem) {
                     existingItem.quantity++;
                 } else {
@@ -66,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 showNotification('Товар добавлен в корзину');
             });
         });
-
         container.querySelectorAll('.wishlist-btn').forEach(button => {
             if (wishlist.includes(parseInt(button.dataset.id))) {
                 button.classList.add('active');
@@ -74,30 +61,24 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
                 const id = parseInt(e.currentTarget.dataset.id);
-                const button = e.currentTarget;
-
                 if (wishlist.includes(id)) {
                     wishlist = wishlist.filter(itemId => itemId !== id);
-                    button.classList.remove('active');
+                    e.currentTarget.classList.remove('active');
                     showNotification('Удалено из избранного');
                 } else {
                     wishlist.push(id);
-                    button.classList.add('active');
+                    e.currentTarget.classList.add('active');
                     showNotification('Добавлено в избранное');
                 }
                 saveData();
                 updateCounters();
-
-                if (document.body.id === 'wishlist-page') {
-                    renderWishlist();
-                }
-                if (document.body.id === 'cart-page') {
-                    renderCart();
-                }
+                if (document.body.id === 'wishlist-page') renderWishlist();
+                if (document.body.id === 'cart-page') renderCart();
             });
         });
     };
 
+    // --- ОРИГИНАЛЬНАЯ ФУНКЦИЯ РЕНДЕРИНГА ТОВАРОВ ---
     const renderProductGrid = (containerSelector, products) => {
         const container = document.querySelector(containerSelector);
         if (!container) return;
@@ -108,8 +89,9 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = products.map(product => `
             <div class="product-card">
                 <a href="product.html?id=${product.id}" class="product-link">
-                    <div class="product-image">
-                        <img src="${product.imageUrl}" alt="${product.name}">
+                    <div class="product-image lazy-image-container">
+                        <img src="${product.previewUrl}" class="lazy-image-preview" alt="${product.name}">
+                        <img data-src="${product.imageUrl}" class="lazy-image-original" alt="${product.name}">
                         <button class="wishlist-btn ${wishlist.includes(product.id) ? 'active' : ''}" data-id="${product.id}">
                             <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                         </button>
@@ -127,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
         handleProductActions(container);
+        // ВАЖНО: Запускаем lazy load сразу после отрисовки
+        lazyLoadImages(); 
     };
     
     const renderWishlist = () => {
@@ -325,35 +309,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const input = e.target;
             let value = input.value.replace(/\D/g, '');
             let formattedValue = '+7 (';
-
             if (value.length > 1) formattedValue += value.substring(1, 4);
             if (value.length >= 5) formattedValue += ') ' + value.substring(4, 7);
             if (value.length >= 8) formattedValue += '-' + value.substring(7, 9);
             if (value.length >= 10) formattedValue += '-' + value.substring(9, 11);
-            
             input.value = formattedValue;
         };
-        phoneInput.addEventListener('input', applyPhoneMask);
+        if(phoneInput) phoneInput.addEventListener('input', applyPhoneMask);
 
-        paymentRadios.forEach(radio => radio.addEventListener('change', () => {
-            if (radio.value === 'cash') {
-                changeGroup.classList.add('visible');
-                changeGroup.classList.remove('hidden');
-            } else {
-                changeGroup.classList.remove('visible');
-                changeGroup.classList.add('hidden');
-            }
-        }));
+        if(paymentRadios) {
+            paymentRadios.forEach(radio => radio.addEventListener('change', () => {
+                if (radio.value === 'cash') {
+                    changeGroup.classList.add('visible');
+                    changeGroup.classList.remove('hidden');
+                } else {
+                    changeGroup.classList.remove('visible');
+                    changeGroup.classList.add('hidden');
+                }
+            }));
+        }
         
         const validateForm = () => {
             let isValid = true;
             const inputsToValidate = orderForm.querySelectorAll('[required]');
-            
             inputsToValidate.forEach(input => {
                 const errorSpan = input.parentElement.querySelector('.error-message');
                 input.classList.remove('error');
                 if (errorSpan) errorSpan.textContent = '';
-                
                 if (input.value.trim() === '') {
                     isValid = false;
                     input.classList.add('error');
@@ -364,103 +346,84 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (errorSpan) errorSpan.textContent = 'Введите корректный номер телефона';
                 }
             });
-
             const isCourier = document.querySelector('input[name="delivery"]:checked').value === 'courier';
             const addressTextarea = orderForm.querySelector('#customer-address');
             const addressErrorSpan = modalAddressGroup.querySelector('.error-message');
             addressTextarea.classList.remove('error');
             if (addressErrorSpan) addressErrorSpan.textContent = '';
-
             if (isCourier && addressTextarea.value.trim() === '') {
                 isValid = false;
                 addressTextarea.classList.add('error');
                 if (addressErrorSpan) addressErrorSpan.textContent = 'Введите адрес для доставки';
             }
-            
             return isValid;
         };
 
-        orderForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    if (!validateForm()) {
-        return;
-    }
-
-    var submitButton = orderForm.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Отправка...';
-
-    var subtotalPriceText = document.getElementById('final-total-price').textContent;
-    var isCourier = document.querySelector('input[name="delivery"]:checked').value === 'courier';
-    
-    var deliveryCostNum = 0;
-    if (isCourier) {
-        var subtotalPrice = parseInt(subtotalPriceText.replace(/\s/g, ''));
-        deliveryCostNum = subtotalPrice >= 5000 ? 0 : 300;
-    }
-
-    var selectedItems = cart.filter(function(item) { return item.selected; });
-    var orderData = {
-        name: document.getElementById('customer-name').value,
-        phone: document.getElementById('customer-phone').value,
-        comment: document.getElementById('customer-comment').value,
-        address: isCourier ? document.getElementById('customer-address').value : 'Самовывоз',
-        paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
-        cashChange: document.getElementById('cash-change').value,
-        items: selectedItems.map(function(item) {
-            var product = productData.find(function(p) { return p.id === item.id; });
-            return {
-                name: product.name,
-                quantity: item.quantity,
-                price: (product.price * item.quantity).toLocaleString('ru-RU')
-            };
-        }),
-        deliveryCost: deliveryCostNum.toLocaleString('ru-RU'),
-        totalPrice: subtotalPriceText
-    };
-
-    fetch('https://klas0.pythonanywhere.com/submit-order', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-    })
-    .then(function(response) {
-        if (!response.ok) {
-            return response.json().then(function(err) { throw new Error(JSON.stringify(err.message || 'Server error')); });
+        if(orderForm) {
+            orderForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (!validateForm()) { return; }
+                var submitButton = orderForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Отправка...';
+                var subtotalPriceText = document.getElementById('final-total-price').textContent;
+                var isCourier = document.querySelector('input[name="delivery"]:checked').value === 'courier';
+                var deliveryCostNum = 0;
+                if (isCourier) {
+                    var subtotalPrice = parseInt(subtotalPriceText.replace(/\s/g, ''));
+                    deliveryCostNum = subtotalPrice >= 5000 ? 0 : 300;
+                }
+                var selectedItems = cart.filter(function(item) { return item.selected; });
+                var orderData = {
+                    name: document.getElementById('customer-name').value,
+                    phone: document.getElementById('customer-phone').value,
+                    comment: document.getElementById('customer-comment').value,
+                    address: isCourier ? document.getElementById('customer-address').value : 'Самовывоз',
+                    paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+                    cashChange: document.getElementById('cash-change').value,
+                    items: selectedItems.map(function(item) {
+                        var product = productData.find(function(p) { return p.id === item.id; });
+                        return { name: product.name, quantity: item.quantity, price: (product.price * item.quantity).toLocaleString('ru-RU') };
+                    }),
+                    deliveryCost: deliveryCostNum.toLocaleString('ru-RU'),
+                    totalPrice: subtotalPriceText
+                };
+                fetch('https://klas0.pythonanywhere.com/submit-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                })
+                .then(function(response) {
+                    if (!response.ok) {
+                        return response.json().then(function(err) { throw new Error(JSON.stringify(err.message || 'Server error')); });
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    var modalContent = modal.querySelector('.modal-content');
+                    modalContent.innerHTML = '<h2>Спасибо за заказ! (´-ω-`)</h2><p>Наш менеджер скоро свяжется с вами. Страница перезагрузится через несколько секунд...</p>';
+                    cart = cart.filter(function(item) { return !item.selected; });
+                    saveData();
+                    setTimeout(function() { window.location.reload(); }, 4000);
+                })
+                .catch(function(error) {
+                    console.error('Ошибка отправки заказа:', error);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Заказать';
+                    alert('Произошла ошибка при отправке заказа. Пожалуйста, попробуйте еще раз.\n\nОшибка: ' + error.message);
+                });
+            });
         }
-        return response.json();
-    })
-    .then(function(data) {
-        var modalContent = modal.querySelector('.modal-content');
-        modalContent.innerHTML = '<h2>Спасибо за заказ! (´-ω-`)</h2><p>Наш менеджер скоро свяжется с вами. Страница перезагрузится через несколько секунд...</p>';
-        
-        cart = cart.filter(function(item) { return !item.selected; });
-        saveData();
-
-        setTimeout(function() { 
-            window.location.reload();
-        }, 4000);
-    })
-    .catch(function(error) {
-        console.error('Ошибка отправки заказа:', error);
-        submitButton.disabled = false;
-        submitButton.textContent = 'Заказать';
-        alert('Произошла ошибка при отправке заказа. Пожалуйста, попробуйте еще раз.\n\nОшибка: ' + error.message);
-    });
-});
 
         checkoutBtn.addEventListener('click', () => {
             if (cart.filter(item => item.selected).length > 0) {
                 const selectedDelivery = document.querySelector('input[name="delivery"]:checked').value;
                 const cardLabel = document.getElementById('card-payment-label');
-
                 if (selectedDelivery === 'pickup') {
                     cardLabel.textContent = 'Картой в магазине';
                     modalAddressGroup.classList.remove('visible');
                     modalAddressGroup.classList.add('hidden');
-                } else { // courier
+                } else {
                     cardLabel.textContent = 'Картой курьеру';
                     modalAddressGroup.classList.add('visible');
                     modalAddressGroup.classList.remove('hidden');
@@ -469,11 +432,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const closeModal = () => {
-            modal.style.display = 'none';
-        };
-
-        closeBtn.addEventListener('click', closeModal);
+        const closeModal = () => { modal.style.display = 'none'; };
+        if(closeBtn) closeBtn.addEventListener('click', closeModal);
         window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
     };
 
@@ -487,7 +447,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const initLiveSearch = () => {
         const searchForms = document.querySelectorAll('.search-form');
-
         searchForms.forEach(form => {
             const searchInput = form.querySelector('input');
             const resultsContainer = form.querySelector('#search-results');
@@ -504,15 +463,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const handleSearch = () => {
                 const query = searchInput.value.trim().toLowerCase();
                 resultsContainer.innerHTML = '';
-
                 if (query.length < 2) {
                     resultsContainer.classList.remove('active');
                     return;
                 }
-
                 const matches = productData.filter(product => product.name.toLowerCase().includes(query));
                 resultsContainer.classList.add('active');
-
                 if (matches.length > 0) {
                     resultsContainer.innerHTML = matches.slice(0, 5).map(product => `
                         <a href="product.html?id=${product.id}" class="search-result-item">
@@ -522,7 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </a>
                     `).join('');
-
                     if (matches.length > 5) {
                         resultsContainer.innerHTML += `<a href="catalog.html?search=${encodeURIComponent(query)}" class="search-result-footer">Показать все результаты (${matches.length})</a>`;
                     }
@@ -530,9 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultsContainer.innerHTML = `<div class="no-results">Ничего не найдено</div>`;
                 }
             };
-            
             searchInput.addEventListener('input', debounce(handleSearch, 300));
-
             document.addEventListener('click', (e) => {
                 if (!form.contains(e.target)) {
                     resultsContainer.classList.remove('active');
@@ -541,20 +494,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
+    // --- ЛОГИКА LAZY LOAD ---
+    const lazyLoadImages = () => {
+        const lazyImages = document.querySelectorAll('img.lazy-image-original');
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.onload = () => img.classList.add('loaded');
+                        observer.unobserve(img);
+                    }
+                });
+            }, { rootMargin: "0px 0px 200px 0px" });
+            lazyImages.forEach(img => observer.observe(img));
+        } else {
+            lazyImages.forEach(img => {
+                img.src = img.dataset.src;
+                img.classList.add('loaded');
+            });
+        }
+    };
+
+    // --- ЛОГИКА ЗАПУСКА ДЛЯ КАЖДОЙ СТРАНИЦЫ ---
     if (document.body.id === 'catalog-page') {
         const applyFiltersAndSort = () => {
             let filtered = [...productData];
-            
             const activeCategory = document.querySelector('#category-filter a.active')?.dataset.category;
             if (activeCategory && activeCategory !== 'all') {
                 filtered = filtered.filter(p => p.category === activeCategory);
             }
-            
             const minPrice = parseFloat(document.getElementById('min-price').value);
             const maxPrice = parseFloat(document.getElementById('max-price').value);
             if (!isNaN(minPrice)) filtered = filtered.filter(p => p.price >= minPrice);
             if (!isNaN(maxPrice)) filtered = filtered.filter(p => p.price <= maxPrice);
-
             const searchInput = document.querySelector('#catalog-page .search-bar input');
             if (searchInput && searchInput.value) {
                 const searchQuery = searchInput.value.trim().toLowerCase();
@@ -562,18 +536,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery));
                 }
             }
-            
             const sortBy = document.getElementById('sort-by').value;
             switch(sortBy) {
                 case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
                 case 'price-desc': filtered.sort((a, b) => b.price - a.price); break;
                 case 'name-asc': filtered.sort((a, b) => a.name.localeCompare(b.name)); break;
             }
-            
             document.getElementById('product-count').textContent = `Найдено: ${filtered.length}`;
             renderProductGrid('.grid', filtered);
         };
-
         document.querySelectorAll('#category-filter a').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -589,22 +560,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (catalogSearchInput) {
             catalogSearchInput.addEventListener('input', debounce(applyFiltersAndSort, 300));
         }
-
         const urlParams = new URLSearchParams(window.location.search);
         const categoryQuery = urlParams.get('category');
         const searchQuery = urlParams.get('search');
-        
         if (categoryQuery) {
             document.querySelector('#category-filter a.active').classList.remove('active');
             const categoryLink = document.querySelector(`#category-filter a[data-category="${categoryQuery}"]`);
             if (categoryLink) categoryLink.classList.add('active');
         }
-        
         if (searchQuery) {
             const searchInput = document.querySelector('.search-bar input');
             if(searchInput) searchInput.value = searchQuery;
         }
-        
         applyFiltersAndSort();
     } else if (document.body.id === 'home-page') {
         const hitProductIds = [24, 16, 48, 15, 11, 6, 54, 12];
@@ -629,23 +596,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleScroll = () => {
         const currentScrollY = window.scrollY;
         const stickyElements = document.querySelectorAll('.filters, .cart-summary');
-        
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
             header.classList.add('sticky');
         } else if (currentScrollY < lastScrollY) {
             header.classList.remove('sticky');
         }
-        
         const headerBottom = document.querySelector('.header-bottom');
         const headerVisibleHeight = header.classList.contains('sticky') ? (headerBottom?.offsetHeight || 0) : header.offsetHeight;
-        
         stickyElements.forEach(el => {
             el.style.top = `${headerVisibleHeight + 20}px`;
         });
-
         lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY; 
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     const burger = document.querySelector('.burger-menu');
@@ -659,13 +621,11 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.classList.remove('active');
             body.classList.remove('menu-open');
         };
-
         burger.addEventListener('click', () => {
             nav.classList.toggle('active');
             overlay.classList.toggle('active');
             body.classList.toggle('menu-open');
         });
-
         overlay.addEventListener('click', closeMenu);
     }
 
@@ -676,17 +636,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }, { threshold: 0.1 });
-
     document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
 
     initLiveSearch();
     updateCounters();
 
-
-
-
-
-// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v5.0 (с голосованием) ---
+    // --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v5.0 (с голосованием) ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
@@ -694,10 +649,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const API_BASE_URL = 'https://klas0.pythonanywhere.com';
 
-        // --- ЛОГИКА ID ПОЛЬЗОВАТЕЛЯ ---
         let userId = localStorage.getItem('reviewUserId');
         if (!userId) {
-            // Генерируем уникальный ID для этого браузера
             userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 15);
             localStorage.setItem('reviewUserId', userId);
         }
@@ -714,9 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const createReviewHTML = (review) => {
             const date = new Date(review.timestamp + 'Z');
             const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
             const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
-            
             const score = (review.upvotes || 0) - (review.downvotes || 0);
             let scoreClass = '';
             if (score > 0) scoreClass = 'positive';
@@ -756,13 +707,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}&user_id=${userId}`);
                 if (!response.ok) throw new Error('Ошибка загрузки отзывов');
                 const reviews = await response.json();
-                
                 if (reviews.length === 0) {
                     reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Отзывов пока нет. Будьте первым!</p>';
                     return;
                 }
                 reviewsContainer.innerHTML = reviews.map(createReviewHTML).join('');
-
             } catch (error) {
                 console.error(error);
                 reviewsContainer.innerHTML = '<p style="text-align: center; color: var(--accent-red);">Не удалось загрузить отзывы.</p>';
@@ -774,16 +723,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const ratingInput = reviewForm.querySelector('input[name="rating"]:checked');
             const nameInput = document.getElementById('review-name');
             const textInput = document.getElementById('review-text');
-            
             let isValid = true;
             if (!ratingInput) { alert('Пожалуйста, поставьте оценку (звездочки)'); return; }
             if (textInput.value.trim() === '') { textInput.parentElement.querySelector('.error-message').textContent = 'Напишите отзыв'; isValid = false; } else { textInput.parentElement.querySelector('.error-message').textContent = ''; }
             if (!isValid) return;
-
             const submitButton = reviewForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Отправка...';
-
             try {
                 const response = await fetch(`${API_BASE_URL}/add-review`, {
                     method: 'POST',
@@ -796,7 +742,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
-                
                 if (result.review) {
                     const newReviewHTML = createReviewHTML(result.review);
                     reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
@@ -821,14 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         reviewsContainer.addEventListener('click', async (e) => {
             const target = e.target;
-            
-            // --- ЛОГИКА ГОЛОСОВАНИЯ ---
             const voteButton = target.closest('.vote-btn');
             if (voteButton) {
                 const reviewId = voteButton.dataset.reviewId;
                 const voteType = parseInt(voteButton.dataset.voteType);
-                
-                voteButton.disabled = true; // Блокируем кнопку на время запроса
+                voteButton.disabled = true;
                 try {
                     const response = await fetch(`${API_BASE_URL}/vote`, {
                         method: 'POST',
@@ -837,38 +779,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
-
                     const scoreEl = document.getElementById(`score-${reviewId}`);
                     const score = result.upvotes - result.downvotes;
                     scoreEl.textContent = `${score > 0 ? '+' : ''}${score}`;
                     scoreEl.className = 'vote-score';
                     if (score > 0) scoreEl.classList.add('positive');
                     if (score < 0) scoreEl.classList.add('negative');
-                    
                     const parentCard = voteButton.closest('.review-card');
-                const upBtn = parentCard.querySelector('.vote-btn.up');
-                const downBtn = parentCard.querySelector('.vote-btn.down');
-                const wasVoted = voteButton.classList.contains('voted');
-
-                // Сначала всегда убираем подсветку со всех кнопок в этом отзыве
-                upBtn.classList.remove('voted');
-                downBtn.classList.remove('voted');
-                
-                // А теперь решаем, нужно ли подсвечивать что-то заново
-                if (!wasVoted) {
-                    // Если мы ДО этого не голосовали, значит, мы поставили новый голос. Подсвечиваем.
-                    voteButton.classList.add('voted');
-                }
+                    const upBtn = parentCard.querySelector('.vote-btn.up');
+                    const downBtn = parentCard.querySelector('.vote-btn.down');
+                    const wasVoted = voteButton.classList.contains('voted');
+                    upBtn.classList.remove('voted');
+                    downBtn.classList.remove('voted');
+                    if (!wasVoted) {
+                        voteButton.classList.add('voted');
+                    }
                 } catch (error) { 
                     console.error(error);
                     showNotification('Ошибка голосования');
                 } finally {
-                    voteButton.disabled = false; // Разблокируем кнопку
+                    voteButton.disabled = false;
                 }
                 return;
             }
 
-            // --- ЛОГИКА ОТВЕТОВ ---
             if (target.classList.contains('show-replies-btn')) {
                 const parentId = target.dataset.parentId;
                 const repliesContainer = document.getElementById(`replies-for-${parentId}`);
@@ -898,7 +832,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     formContainer.style.display = formContainer.style.display === 'block' ? 'none' : 'block';
                     return;
                 }
-                
                 formContainer.innerHTML = `
                     <form class="reply-form">
                         <div class="form-group"><input type="text" class="reply-name" placeholder="Ваше имя" required></div>
@@ -911,18 +844,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 formContainer.style.display = 'block';
                 formContainer.querySelector('textarea').focus();
-
                 formContainer.querySelector('.cancel-reply-btn').addEventListener('click', () => {
                     formContainer.style.display = 'none';
                 });
-
                 formContainer.querySelector('.reply-form').addEventListener('submit', async (submitEvent) => {
                     submitEvent.preventDefault();
                     const form = submitEvent.target;
                     const name = form.querySelector('.reply-name').value;
                     const text = form.querySelector('textarea').value;
                     if (text.trim() === '' || name.trim() === '') return;
-
                     try {
                         const response = await fetch(`${API_BASE_URL}/add-review`, {
                             method: 'POST',
@@ -931,10 +861,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
-
                         formContainer.innerHTML = '';
                         formContainer.style.display = 'none';
-
                         if (result.review) {
                             showNotification('Ваш ответ опубликован!');
                             const repliesContainer = document.getElementById(`replies-for-${parentId}`);
