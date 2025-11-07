@@ -27,12 +27,66 @@ section { padding: calc(var(--spacing) * 3) 0; }
 .logo { font-weight: 800; font-size: 1.5rem; color: var(--text-dark); }
 .header-nav { display: block; }
 .header-nav ul { list-style: none; display: flex; gap: calc(var(--spacing) * 1.5); }
-.header-icons { display: flex; gap: calc(var(--spacing) * 1.5); align-items: center; }
-.header-icons a { position: relative; color: var(--text-dark); display: flex; align-items: center; }
-.header-icons .icon-wrapper svg { width: 26px; height: 26px; fill: var(--text-dark); transition: fill 0.3s ease, stroke 0.3s ease; }
-.header-icons .icon-wrapper svg.heart-icon { fill: none; stroke: var(--text-dark); stroke-width: 2; }
-.header-icons a:hover .icon-wrapper svg { fill: var(--secondary); stroke: var(--secondary); }
-.header-icons .count-badge { position: absolute; top: -8px; right: -8px; background-color: var(--accent-red); color: white; font-size: 0.7rem; width: 18px; height: 18px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; z-index: 2; }
+.header-icons {
+    display: flex;
+    gap: calc(var(--spacing) * 1.5);
+    align-items: center;
+}
+.header-icons a {
+    position: relative;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+}
+.header-icons .icon-wrapper svg {
+    width: 26px;
+    height: 26px;
+    transition: fill 0.3s ease, stroke 0.3s ease, transform 0.3s ease;
+}
+
+/* Стили для иконки корзины (с заливкой) */
+.header-icons .icon-wrapper svg.cart-icon {
+    fill: var(--text-dark);
+}
+/* Стили для иконки сердечка (только обводка) */
+.header-icons .icon-wrapper svg.heart-icon {
+    fill: none;
+    stroke: var(--text-dark);
+    stroke-width: 2;
+}
+
+/* Общее правило для увеличения при наведении */
+.header-icons a:hover .icon-wrapper svg {
+    transform: scale(1.15);
+}
+
+/* Правило для смены цвета корзины при наведении */
+.header-icons a:hover .icon-wrapper svg.cart-icon {
+    fill: var(--secondary);
+}
+
+/* Правило для смены цвета сердечка при наведении (только обводка) */
+.header-icons a:hover .icon-wrapper svg.heart-icon {
+    stroke: var(--secondary);
+    fill: none !important; /* Гарантия от заливки */
+}
+
+.header-icons .count-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: var(--accent-red);
+    color: white;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    z-index: 2;
+}
 .header-bottom { display: flex; align-items: center; padding: var(--spacing) 0; }
 .burger-menu { display: none; font-size: 2rem; cursor: pointer; border: none; background: none; }
 
