@@ -763,9 +763,14 @@ input.error, textarea.error {
         right: 1rem;
     }
     .vote-btn svg {
-        width: 20px;
-        height: 20px;
-    }
+    width: 22px; /* Чуть меньше */
+    height: 22px;
+    stroke: #999;
+    stroke-width: 2.5; /* Чуть жирнее */
+    fill: none;
+    transition: all 0.2s ease;
+}
+
 }
 
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ ЗДЕСЬ === */

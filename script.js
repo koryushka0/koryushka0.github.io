@@ -726,11 +726,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="review-card" id="review-${review.id}">
                     <div class="review-voting">
                         <button class="vote-btn up ${review.user_vote === 1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="1">
-                            <svg viewBox="0 0 24 24"><path d="M12 5l-8 8h16z"/></svg>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg>
                         </button>
                         <span class="vote-score ${scoreClass}" id="score-${review.id}">${score > 0 ? '+' : ''}${score}</span>
                         <button class="vote-btn down ${review.user_vote === -1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="-1">
-                            <svg viewBox="0 0 24 24"><path d="M12 19l8-8H4z"/></svg>
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                     </div>
                     <div class="review-header">
