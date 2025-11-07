@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name: nameInput.value,
+                        name: nameInput.value.trim() || "Аноним",
                         text: textInput.value,
                         rating: parseInt(ratingInput.value)
                     })
@@ -826,7 +826,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         repliesContainer.innerHTML = replies.map(createReviewHTML).join('');
                         repliesContainer.style.display = 'block';
                         target.textContent = '⬆ Скрыть ответы';
-                    } catch (error) { /* ... */ }
+                    } catch (error) {
+                        console.error("Не удалось загрузить ответы:", error);
+                        repliesContainer.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">Не удалось загрузить ответы. Попробуйте позже.</p>';
+                        repliesContainer.style.display = 'block'; 
+                    }
                 }
             }
 
