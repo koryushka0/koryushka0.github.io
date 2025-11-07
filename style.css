@@ -254,6 +254,30 @@ body.menu-open { overflow: hidden; }
 }
 
 @media (max-width: 768px) {
+
+    /* === Адаптивные стили для системы отзывов === */
+    .reviews-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .review-form-container {
+        padding: 1.5rem;
+    }
+    .rating-group label {
+        font-size: 2rem;
+    }
+    .review-card {
+        padding: 1rem;
+    }
+    .replies-container {
+        margin-left: 1rem;
+        padding-left: 1rem;
+    }
+    .review-footer {
+        flex-wrap: wrap; /* Позволяет кнопкам переноситься на новую строку */
+    }
+
     h2 { font-size: 1.8rem; }
     .section-subtitle { font-size: 0.9rem; }
     
