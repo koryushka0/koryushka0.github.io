@@ -683,38 +683,64 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCounters();
 
 
-    // --- ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
+
+
+
+// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
-        const reviewName = document.getElementById('review-name');
-        const reviewText = document.getElementById('review-text');
+        const sortSelect = document.getElementById('reviews-sort');
+        
+        const API_BASE_URL = 'https://klas0.pythonanywhere.com';
+
+        const createStarRating = (rating) => {
+            if (!rating) return '';
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += `<span class="star ${i <= rating ? '' : 'empty'}">★</span>`;
+            }
+            return `<div class="review-rating">${stars}</div>`;
+        };
+        
+        const createReviewHTML = (review) => {
+            const date = new Date(review.timestamp + 'Z');
+            const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            // SVG-иконка админа (галочка в щите)
+            const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
+
+            return `
+                <div class="review-card" id="review-${review.id}">
+                    <div class="review-header">
+                        ${review.is_admin_reply ? `${adminBadgeSVG}<span class="review-author admin">${review.name}</span>` : `<span class="review-author">${review.name}</span>`}
+                    </div>
+                    ${createStarRating(review.rating)}
+                    <p class="review-text">${review.text}</p>
+                    <div class="review-footer">
+                        <span class="review-date">${formattedDate}</span>
+                        ${!review.parent_id ? `<button class="reply-btn" data-parent-id="${review.id}">Ответить</button>` : ''}
+                        ${review.reply_count > 0 ? `<button class="reply-btn show-replies-btn" data-parent-id="${review.id}">💬 Показать ответы (${review.reply_count})</button>` : ''}
+                    </div>
+                    <div class="replies-container" id="replies-for-${review.id}"></div>
+                    <div class="reply-form-container" id="reply-form-for-${review.id}"></div>
+                </div>
+            `;
+        };
 
         const fetchAndRenderReviews = async () => {
+            const sortBy = sortSelect.value;
+            reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Загрузка отзывов...</p>';
             try {
-                const response = await fetch('https://klas0.pythonanywhere.com/get-reviews');
+                const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}`);
                 if (!response.ok) throw new Error('Ошибка загрузки отзывов');
-                
                 const reviews = await response.json();
                 
                 if (reviews.length === 0) {
                     reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Отзывов пока нет. Будьте первым!</p>';
                     return;
                 }
-
-                reviewsContainer.innerHTML = reviews.map(review => {
-                    const date = new Date(review.timestamp);
-                    const formattedDate = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-                    return `
-                        <div class="review-card">
-                            <div class="review-card-header">
-                                <span class="review-author">${review.name}</span>
-                                <span class="review-date">${formattedDate}</span>
-                            </div>
-                            <p class="review-text">${review.text}</p>
-                        </div>
-                    `;
-                }).join('');
+                reviewsContainer.innerHTML = reviews.map(createReviewHTML).join('');
 
             } catch (error) {
                 console.error(error);
@@ -724,21 +750,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         reviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const ratingInput = reviewForm.querySelector('input[name="rating"]:checked');
+            const nameInput = document.getElementById('review-name');
+            const textInput = document.getElementById('review-text');
             
-            // Простая валидация
             let isValid = true;
-            if (reviewName.value.trim() === '') {
-                reviewName.parentElement.querySelector('.error-message').textContent = 'Пожалуйста, введите ваше имя';
-                isValid = false;
-            } else {
-                reviewName.parentElement.querySelector('.error-message').textContent = '';
-            }
-            if (reviewText.value.trim() === '') {
-                reviewText.parentElement.querySelector('.error-message').textContent = 'Пожалуйста, напишите что-нибудь :)';
-                isValid = false;
-            } else {
-                reviewText.parentElement.querySelector('.error-message').textContent = '';
-            }
+            if (!ratingInput) { alert('Пожалуйста, поставьте оценку (звездочки)'); return; }
+            if (nameInput.value.trim() === '') { nameInput.parentElement.querySelector('.error-message').textContent = 'Введите имя'; isValid = false; } else { nameInput.parentElement.querySelector('.error-message').textContent = ''; }
+            if (textInput.value.trim() === '') { textInput.parentElement.querySelector('.error-message').textContent = 'Напишите отзыв'; isValid = false; } else { textInput.parentElement.querySelector('.error-message').textContent = ''; }
             if (!isValid) return;
 
             const submitButton = reviewForm.querySelector('button[type="submit"]');
@@ -746,17 +765,17 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Отправка...';
 
             try {
-                const response = await fetch('https://klas0.pythonanywhere.com/add-review', {
+                const response = await fetch(`${API_BASE_URL}/add-review`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name: reviewName.value,
-                        text: reviewText.value
+                        name: nameInput.value,
+                        text: textInput.value,
+                        rating: parseInt(ratingInput.value)
                     })
                 });
-
-                if (!response.ok) throw new Error('Ошибка сервера при добавлении отзыва');
-
+                if (!response.ok) throw new Error('Ошибка сервера');
+                
                 reviewForm.innerHTML = '<h4 style="text-align:center; color: var(--primary);">Спасибо! Ваш отзыв отправлен на модерацию. (. ❛ ᴗ ❛.)</h4>';
                 showNotification('Отзыв успешно отправлен!');
 
@@ -767,8 +786,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitButton.textContent = 'Отправить отзыв';
             }
         });
+        
+        reviewsContainer.addEventListener('click', async (e) => {
+            const target = e.target;
+            
+            // Показать/скрыть ответы
+            if (target.classList.contains('show-replies-btn')) {
+                const parentId = target.dataset.parentId;
+                const repliesContainer = document.getElementById(`replies-for-${parentId}`);
+                if (repliesContainer.style.display === 'block') {
+                    repliesContainer.style.display = 'none';
+                    target.textContent = `💬 Показать ответы (${repliesContainer.children.length})`;
+                } else {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/get-replies?parent_id=${parentId}`);
+                        const replies = await response.json();
+                        repliesContainer.innerHTML = replies.map(createReviewHTML).join('');
+                        repliesContainer.style.display = 'block';
+                        target.textContent = '⬆ Скрыть ответы';
+                    } catch (error) {
+                        repliesContainer.innerHTML = '<p style="color:red">Не удалось загрузить ответы</p>';
+                    }
+                }
+            }
 
-        // Загружаем отзывы при открытии страницы
+            // Открыть форму ответа
+            if (target.classList.contains('reply-btn') && !target.classList.contains('show-replies-btn')) {
+                const parentId = target.dataset.parentId;
+                const formContainer = document.getElementById(`reply-form-for-${parentId}`);
+                if (formContainer.innerHTML) {
+                    formContainer.style.display = formContainer.style.display === 'block' ? 'none' : 'block';
+                    return;
+                }
+                
+                formContainer.innerHTML = `
+                    <form class="reply-form">
+                        <textarea placeholder="Напишите ваш ответ..." rows="3" required></textarea>
+                        <div class="reply-form-buttons">
+                            <button type="button" class="btn btn-secondary cancel-reply-btn">Отмена</button>
+                            <button type="submit" class="btn">Отправить</button>
+                        </div>
+                    </form>
+                `;
+                formContainer.style.display = 'block';
+
+                formContainer.querySelector('.cancel-reply-btn').addEventListener('click', () => {
+                    formContainer.style.display = 'none';
+                });
+
+                formContainer.querySelector('.reply-form').addEventListener('submit', async (submitEvent) => {
+                    submitEvent.preventDefault();
+                    const form = submitEvent.target;
+                    const text = form.querySelector('textarea').value;
+                    if (text.trim() === '') return;
+
+                    try {
+                        await fetch(`${API_BASE_URL}/add-review`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: "Администратор #koryushka_is_the_best",
+                                text: text,
+                                parent_id: parentId
+                            })
+                        });
+                        showNotification('Ваш ответ опубликован!');
+                        formContainer.innerHTML = '';
+                        formContainer.style.display = 'none';
+                        // Обновляем список ответов, чтобы сразу увидеть новый
+                        const showRepliesBtn = target.closest('.review-card').querySelector('.show-replies-btn');
+                        if (showRepliesBtn) {
+                           // Симулируем два клика для обновления
+                           showRepliesBtn.click(); 
+                           setTimeout(() => showRepliesBtn.click(), 100);
+                        } else {
+                           // Если кнопки "показать ответы" не было, просто перезагружаем все отзывы
+                           fetchAndRenderReviews();
+                        }
+                    } catch (error) {
+                        showNotification('Ошибка отправки ответа');
+                    }
+                });
+            }
+        });
+
+        // Слушатель для сортировки
+        sortSelect.addEventListener('change', fetchAndRenderReviews);
+
+        // Первая загрузка отзывов
         fetchAndRenderReviews();
     }
 });

@@ -69,7 +69,15 @@
                 
                 <div class="review-form-container">
                     <h3>Оставить отзыв</h3>
+                    <p class="form-subtitle">Ваш отзыв появится на сайте после проверки модератором</p>
                     <form id="review-form" novalidate>
+                        <div class="form-group rating-group">
+                            <input type="radio" id="star5" name="rating" value="5" required><label for="star5" title="Отлично">★</label>
+                            <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="Хорошо">★</label>
+                            <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="Нормально">★</label>
+                            <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="Плохо">★</label>
+                            <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="Ужасно">★</label>
+                        </div>
                         <div class="form-group">
                             <label for="review-name">Ваше имя</label>
                             <input type="text" id="review-name" placeholder="Как к вам обращаться?" required>
@@ -85,9 +93,19 @@
                 </div>
 
                 <div class="reviews-list">
-                    <h3>Что о нас говорят</h3>
+                    <div class="reviews-header">
+                        <h3>Что о нас говорят</h3>
+                        <div class="sort-reviews-wrapper">
+                            <label for="reviews-sort">Сортировать:</label>
+                            <select id="reviews-sort">
+                                <option value="newest">Сначала новые</option>
+                                <option value="oldest">Сначала старые</option>
+                                <option value="highest">С высоким рейтингом</option>
+                                <option value="lowest">С низким рейтингом</option>
+                            </select>
+                        </div>
+                    </div>
                     <div id="reviews-container">
-                        <!-- Сюда JavaScript будет загружать отзывы -->
                         <p style="text-align: center; color: #999;">Загрузка отзывов...</p>
                     </div>
                 </div>
@@ -113,7 +131,6 @@
                         <li><a href="delivery.html">Доставка и оплата</a></li>
                         <li><a href="about.html">О компании</a></li>
                         <li><a href="contacts.html">Контакты</a></li>
-                        <li><a href="reviews.html">Отзывы</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -123,10 +140,6 @@
                 </div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>© 2025 Охота и Рыбалка. Все права защищены.</p>
-        </div>
-    </footer>
     <div id="notification-container"></div>
 
     <script src="product_data.js"></script>
