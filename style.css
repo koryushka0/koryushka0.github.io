@@ -344,7 +344,7 @@ body.menu-open { overflow: hidden; }
         padding: 1rem;
     }
     .replies-container {
-        margin-left: 0.5rem; /* Уменьшили отступ слева */
+        margin-left: 0.1rem; /* Уменьшили отступ слева */
         padding-left: 0.75rem; /* Уменьшили внутренний отступ */
     }
     .review-footer {
