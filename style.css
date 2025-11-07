@@ -255,28 +255,6 @@ body.menu-open { overflow: hidden; }
 
 @media (max-width: 768px) {
 
-    /* === Адаптивные стили для системы отзывов === */
-    .reviews-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    .review-form-container {
-        padding: 1.5rem;
-    }
-    .rating-group label {
-        font-size: 2rem;
-    }
-    .review-card {
-        padding: 1rem;
-    }
-    .replies-container {
-        margin-left: 1rem;
-        padding-left: 1rem;
-    }
-    .review-footer {
-        flex-wrap: wrap; /* Позволяет кнопкам переноситься на новую строку */
-    }
 
     h2 { font-size: 1.8rem; }
     .section-subtitle { font-size: 0.9rem; }
@@ -348,6 +326,31 @@ body.menu-open { overflow: hidden; }
         padding: 0.6rem;
         font-size: 0.9rem;
     }
+
+
+    /* === Адаптивные стили для системы отзывов === */
+    .reviews-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .review-form-container {
+        padding: 1.5rem;
+    }
+    .rating-group label {
+        font-size: 2rem;
+    }
+    .review-card {
+        padding: 1rem;
+    }
+    .replies-container {
+        margin-left: 0.5rem; /* Уменьшили отступ слева */
+        padding-left: 0.75rem; /* Уменьшили внутренний отступ */
+    }
+    .review-footer {
+        flex-wrap: wrap; 
+    }
+
 }
 
 /* === СТИЛИ КОМПОНЕНТОВ В КОНЦЕ ФАЙЛА === */
