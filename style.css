@@ -701,7 +701,18 @@ input.error, textarea.error {
 }
 .reply-form-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
 
-/* Стили для голосования */
+/* === Новые стили для голосования в стиле Mangalib === */
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    /* Добавляем пространство для кнопок голосования */
+    padding-right: 80px; 
+}
+.review-card {
+    position: relative; /* Обязательно для позиционирования */
+}
 .review-voting {
     position: absolute;
     top: 1.5rem;
@@ -709,33 +720,27 @@ input.error, textarea.error {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background-color: var(--bg-light);
-    padding: 0.25rem 0.5rem;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
 }
 .vote-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: 0;
     line-height: 1;
 }
 .vote-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     stroke: #999;
     stroke-width: 2;
-    transition: stroke 0.2s ease, transform 0.2s ease;
+    fill: none;
+    transition: all 0.2s ease;
 }
 .vote-btn:hover svg {
     stroke: var(--primary);
 }
-.vote-btn:active {
-    transform: scale(0.9);
-}
-
-.vote-btn.up.voted svg { stroke: #4CAF50; /* Зеленый */}
+/* Стили для проголосовавших кнопок */
+.vote-btn.up.voted svg { stroke: #4CAF50; /* Зеленый */ }
 .vote-btn.down.voted svg { stroke: var(--accent-red); /* Красный */}
 
 .vote-score {
@@ -743,16 +748,25 @@ input.error, textarea.error {
     font-size: 1rem;
     min-width: 25px;
     text-align: center;
-    color: #999; /* Серый по умолчанию */
+    color: #999; /* Серый (для нуля) */
 }
 .vote-score.positive { color: #4CAF50; }
 .vote-score.negative { color: var(--accent-red); }
 
-/* Делаем карточку отзыва position: relative, чтобы стрелочки позиционировались правильно */
-.review-card {
-    position: relative;
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .review-header {
+        padding-right: 70px; /* Уменьшаем отступ */
+    }
+    .review-voting {
+        top: 1rem;
+        right: 1rem;
+    }
+    .vote-btn svg {
+        width: 20px;
+        height: 20px;
+    }
 }
-
 
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ ЗДЕСЬ === */
 
