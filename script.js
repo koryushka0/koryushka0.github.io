@@ -776,24 +776,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
                 
-                // Проверяем, прислал ли сервер нам данные нового отзыва (если это админ)
-                if (result.review) {
+                if (result.review) { // Если это админ
                     const newReviewHTML = createReviewHTML(result.review);
                     reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
-                    reviewForm.reset(); // Просто сбрасываем форму
+                    reviewForm.reset();
                     showNotification('Ваш отзыв опубликован!');
                     submitButton.disabled = false;
                     submitButton.textContent = 'Отправить отзыв';
-                } else {
-                    // Если это обычный юзер, показываем модальное окно
-                    const thanksModal = document.getElementById('review-thanks-modal');
-                    if(thanksModal) {
-                        thanksModal.style.display = 'flex';
-                        // И перезагружаем страницу через 4 секунды
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 4000);
-                    }
+                } else { // Если это обычный юзер
+                    // Создаем модальное окно "на лету"
+                    const thanksModal = document.createElement('div');
+                    thanksModal.className = 'modal';
+                    thanksModal.style.display = 'flex';
+                    thanksModal.innerHTML = `
+                        <div class="modal-content">
+                            <h2>Спасибо за ваш отзыв! (. ❛ ᴗ ❛.)</h2>
+                            <p style="margin: 1rem 0; color: #555;">Он появится на сайте после проверки модератором. Страница скоро обновится.</p>
+                        </div>
+                    `;
+                    document.body.appendChild(thanksModal);
+
+                    // Перезагружаем страницу через 4 секунды
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 4000);
                 }
 
             } catch (error) {
