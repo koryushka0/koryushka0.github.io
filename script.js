@@ -686,7 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СТРАНИЦЫ ОТЗЫВОВ ---
+// --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v4.0 ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
@@ -707,7 +707,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const date = new Date(review.timestamp + 'Z');
             const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-            // SVG-иконка админа (галочка в щите)
             const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
 
             return `
@@ -719,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="review-text">${review.text}</p>
                     <div class="review-footer">
                         <span class="review-date">${formattedDate}</span>
-                        ${!review.parent_id ? `<button class="reply-btn" data-parent-id="${review.id}">Ответить</button>` : ''}
+                        <button class="reply-btn" data-parent-id="${review.parent_id || review.id}" data-author="${review.name}">Ответить</button>
                         ${review.reply_count > 0 ? `<button class="reply-btn show-replies-btn" data-parent-id="${review.id}">💬 Показать ответы (${review.reply_count})</button>` : ''}
                     </div>
                     <div class="replies-container" id="replies-for-${review.id}"></div>
@@ -774,10 +773,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         rating: parseInt(ratingInput.value)
                     })
                 });
-                if (!response.ok) throw new Error('Ошибка сервера');
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
                 
-                reviewForm.innerHTML = '<h4 style="text-align:center; color: var(--primary);">Спасибо! Ваш отзыв отправлен на модерацию. (. ❛ ᴗ ❛.)</h4>';
-                showNotification('Отзыв успешно отправлен!');
+                if (result.review) {
+                    const newReviewHTML = createReviewHTML(result.review);
+                    reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
+                    reviewForm.reset();
+                    showNotification('Ваш отзыв опубликован!');
+                } else {
+                    reviewForm.innerHTML = '<h4 style="text-align:center; color: var(--primary);">Спасибо! Ваш отзыв отправлен на модерацию. (. ❛ ᴗ ❛.)</h4>';
+                    showNotification('Отзыв успешно отправлен!');
+                }
 
             } catch (error) {
                 console.error(error);
@@ -790,7 +797,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewsContainer.addEventListener('click', async (e) => {
             const target = e.target;
             
-            // Показать/скрыть ответы
             if (target.classList.contains('show-replies-btn')) {
                 const parentId = target.dataset.parentId;
                 const repliesContainer = document.getElementById(`replies-for-${parentId}`);
@@ -804,16 +810,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         repliesContainer.innerHTML = replies.map(createReviewHTML).join('');
                         repliesContainer.style.display = 'block';
                         target.textContent = '⬆ Скрыть ответы';
-                    } catch (error) {
-                        repliesContainer.innerHTML = '<p style="color:red">Не удалось загрузить ответы</p>';
-                    }
+                    } catch (error) { /* ... */ }
                 }
             }
 
-            // Открыть форму ответа
             if (target.classList.contains('reply-btn') && !target.classList.contains('show-replies-btn')) {
                 const parentId = target.dataset.parentId;
+                const authorToReply = target.dataset.author;
                 const formContainer = document.getElementById(`reply-form-for-${parentId}`);
+                
                 if (formContainer.innerHTML) {
                     formContainer.style.display = formContainer.style.display === 'block' ? 'none' : 'block';
                     return;
@@ -821,7 +826,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 formContainer.innerHTML = `
                     <form class="reply-form">
-                        <textarea placeholder="Напишите ваш ответ..." rows="3" required></textarea>
+                        <div class="form-group">
+                            <input type="text" class="reply-name" placeholder="Ваше имя (Админ: Имя #код)" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Напишите ваш ответ..." rows="3" required>@${authorToReply}, </textarea>
+                        </div>
                         <div class="reply-form-buttons">
                             <button type="button" class="btn btn-secondary cancel-reply-btn">Отмена</button>
                             <button type="submit" class="btn">Отправить</button>
@@ -829,6 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </form>
                 `;
                 formContainer.style.display = 'block';
+                formContainer.querySelector('textarea').focus();
 
                 formContainer.querySelector('.cancel-reply-btn').addEventListener('click', () => {
                     formContainer.style.display = 'none';
@@ -837,31 +848,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 formContainer.querySelector('.reply-form').addEventListener('submit', async (submitEvent) => {
                     submitEvent.preventDefault();
                     const form = submitEvent.target;
+                    const name = form.querySelector('.reply-name').value;
                     const text = form.querySelector('textarea').value;
-                    if (text.trim() === '') return;
+                    if (text.trim() === '' || name.trim() === '') return;
 
                     try {
-                        await fetch(`${API_BASE_URL}/add-review`, {
+                        const response = await fetch(`${API_BASE_URL}/add-review`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                name: "Администратор #koryushka_is_the_best",
-                                text: text,
-                                parent_id: parentId
-                            })
+                            body: JSON.stringify({ name: name, text: text, parent_id: parentId })
                         });
-                        showNotification('Ваш ответ опубликован!');
+                        const result = await response.json();
+                        if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
+
                         formContainer.innerHTML = '';
                         formContainer.style.display = 'none';
-                        // Обновляем список ответов, чтобы сразу увидеть новый
-                        const showRepliesBtn = target.closest('.review-card').querySelector('.show-replies-btn');
-                        if (showRepliesBtn) {
-                           // Симулируем два клика для обновления
-                           showRepliesBtn.click(); 
-                           setTimeout(() => showRepliesBtn.click(), 100);
-                        } else {
-                           // Если кнопки "показать ответы" не было, просто перезагружаем все отзывы
-                           fetchAndRenderReviews();
+
+                        if (result.review) { // Если ответ от админа, он приходит сразу
+                            showNotification('Ваш ответ опубликован!');
+                            const repliesContainer = document.getElementById(`replies-for-${parentId}`);
+                            if (repliesContainer.style.display !== 'block') {
+                                target.closest('.review-card').querySelector('.show-replies-btn')?.click();
+                            } else {
+                                const newReplyHTML = createReviewHTML(result.review);
+                                repliesContainer.insertAdjacentHTML('beforeend', newReplyHTML);
+                            }
+                        } else { // Если от юзера, уходит на модерацию
+                            showNotification('Ваш ответ отправлен на модерацию!');
                         }
                     } catch (error) {
                         showNotification('Ошибка отправки ответа');
@@ -870,13 +883,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Слушатель для сортировки
         sortSelect.addEventListener('change', fetchAndRenderReviews);
-
-        // Первая загрузка отзывов
         fetchAndRenderReviews();
     }
 });
-
-
-
