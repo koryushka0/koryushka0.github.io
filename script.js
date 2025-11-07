@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formContainer.innerHTML = `
                     <form class="reply-form">
                         <div class="form-group">
-                            <input type="text" class="reply-name" placeholder="Ваше имя (Админ: Имя #код)" required>
+                            <input type="text" class="reply-name" placeholder="Ваше имя" required>
                         </div>
                         <div class="form-group">
                             <textarea placeholder="Напишите ваш ответ..." rows="3" required>@${authorToReply}, </textarea>
