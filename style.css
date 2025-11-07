@@ -10,6 +10,18 @@
     --border-color: #E0E0E0;
     --spacing: 1rem;
 }
+
+::selection {
+    background-color: var(--secondary); /* Цвет фона выделения - бирюзовый */
+    color: var(--text-light); /* Цвет текста на выделении - белый */
+}
+
+/* Это правило меняет цвет курсора в полях ввода */
+input, textarea {
+    caret-color: var(--primary); /* Цвет каретки - темно-серый */
+}
+
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Montserrat', sans-serif; background-color: var(--bg-light); color: var(--text-dark); line-height: 1.6; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 var(--spacing); }
