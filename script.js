@@ -517,6 +517,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- ЛОГИКА ДЛЯ ЛЕНИВОЙ ЗАГРУЗКИ ВИДЕО НА ГЛАВНОЙ ---
+    if (document.body.id === 'home-page') {
+        const heroSection = document.querySelector('.hero-section');
+        const video = heroSection.querySelector('.hero-video');
+
+        // Проверяем, может ли видео вообще воспроизводиться
+        if (video && typeof video.play === 'function') {
+            // Ждем, пока видео будет готово к проигрыванию без пауз
+            video.addEventListener('canplaythrough', () => {
+                // Как только готово, добавляем класс, который скроет "мыло"
+                heroSection.classList.add('video-loaded');
+                // И запускаем воспроизведение
+                video.play();
+            }, { once: true }); // Обработчик сработает только один раз
+        }
+    }
+
     // --- ЛОГИКА ЗАПУСКА ДЛЯ КАЖДОЙ СТРАНИЦЫ ---
     if (document.body.id === 'catalog-page') {
         const applyFiltersAndSort = () => {

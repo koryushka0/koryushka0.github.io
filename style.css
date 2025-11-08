@@ -142,6 +142,30 @@ section { padding: calc(var(--spacing) * 3) 0; }
 .hero-content h1 { font-size: 3.0rem; font-weight: 800; text-shadow: 2px 2px 8px rgba(0,0,0,0.7); margin-bottom: 0.5rem; }
 .hero-content p { font-size: 1.2rem; font-weight: 400; text-shadow: 1px 1px 4px rgba(0,0,0,0.7); }
 
+/* === Стили для ленивой загрузки видео === */
+.hero-poster-blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1; /* Под оверлеем, но над видео */
+    filter: blur(20px);
+    transform: scale(1.1);
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.hero-video {
+    z-index: 0; /* Видео изначально под постером */
+}
+
+/* Когда видео загружено, мы скрываем постер */
+.hero-section.video-loaded .hero-poster-blur {
+    opacity: 0;
+}
+
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: calc(var(--spacing) * 1.5); }
 .grid .empty-state { grid-column: 1 / -1; }
 

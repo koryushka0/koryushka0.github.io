@@ -66,13 +66,19 @@
 
     <main>
         <section class="hero-section">
-            <video class="hero-video" src="assets/videos/hero-video.mp4" autoplay loop muted playsinline></video>
+            <!-- "Мыльная" картинка-заглушка -->
+            <img src="assets/images/hero-video-preview.jpg" class="hero-poster-blur" alt="Загрузка видео...">
+            
+            <!-- Само видео, которое будет грузиться в фоне -->
+            <video class="hero-video" src="assets/videos/hero-video.mp4" loop muted playsinline></video>
+            
             <div class="hero-overlay"></div>
             <div class="hero-content animate-on-scroll">
                 <h1>ВОЗДУХ СТАНОВИТСЯ ОСТРЕЕ</h1>
                 <p>Время готовить снаряжение к зиме</p>
             </div>
         </section>
+
 
         <section class="catalog animate-on-scroll">
             <div class="container">
