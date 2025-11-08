@@ -78,7 +78,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- ОРИГИНАЛЬНАЯ ФУНКЦИЯ РЕНДЕРИНГА ТОВАРОВ ---
+    const lazyLoadImages = () => {
+        const lazyImages = document.querySelectorAll('img.lazy-image-original');
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.onload = () => img.classList.add('loaded');
+                        observer.unobserve(img);
+                    }
+                });
+            }, { rootMargin: "0px 0px 200px 0px" });
+            lazyImages.forEach(img => observer.observe(img));
+        } else {
+            lazyImages.forEach(img => {
+                img.src = img.dataset.src;
+                img.classList.add('loaded');
+            });
+        }
+    };
+
     const renderProductGrid = (containerSelector, products) => {
         const container = document.querySelector(containerSelector);
         if (!container) return;
@@ -109,8 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `).join('');
         handleProductActions(container);
-        // ВАЖНО: Запускаем lazy load сразу после отрисовки
-        lazyLoadImages(); 
+        lazyLoadImages();
     };
     
     const renderWishlist = () => {
@@ -451,7 +471,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = form.querySelector('input');
             const resultsContainer = form.querySelector('#search-results');
             if (!searchInput || !resultsContainer) return;
-
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const query = searchInput.value.trim();
@@ -459,7 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = `catalog.html?search=${encodeURIComponent(query)}`;
                 }
             });
-
             const handleSearch = () => {
                 const query = searchInput.value.trim().toLowerCase();
                 resultsContainer.innerHTML = '';
@@ -494,46 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
-    // --- ЛОГИКА LAZY LOAD ---
-    const lazyLoadImages = () => {
-        const lazyImages = document.querySelectorAll('img.lazy-image-original');
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.dataset.src;
-                        img.onload = () => img.classList.add('loaded');
-                        observer.unobserve(img);
-                    }
-                });
-            }, { rootMargin: "0px 0px 200px 0px" });
-            lazyImages.forEach(img => observer.observe(img));
-        } else {
-            lazyImages.forEach(img => {
-                img.src = img.dataset.src;
-                img.classList.add('loaded');
-            });
-        }
-    };
-
-    // --- ЛОГИКА ДЛЯ ЛЕНИВОЙ ЗАГРУЗКИ ВИДЕО НА ГЛАВНОЙ ---
-    if (document.body.id === 'home-page') {
-        const heroSection = document.querySelector('.hero-section');
-        const video = heroSection.querySelector('.hero-video');
-
-        // Проверяем, может ли видео вообще воспроизводиться
-        if (video && typeof video.play === 'function') {
-            // Ждем, пока видео будет готово к проигрыванию без пауз
-            video.addEventListener('canplaythrough', () => {
-                // Как только готово, добавляем класс, который скроет "мыло"
-                heroSection.classList.add('video-loaded');
-                // И запускаем воспроизведение
-                video.play();
-            }, { once: true }); // Обработчик сработает только один раз
-        }
-    }
-
     // --- ЛОГИКА ЗАПУСКА ДЛЯ КАЖДОЙ СТРАНИЦЫ ---
     if (document.body.id === 'catalog-page') {
         const applyFiltersAndSort = () => {
@@ -591,11 +569,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         applyFiltersAndSort();
     } else if (document.body.id === 'home-page') {
+        // --- ЛОГИКА ДЛЯ ХИТОВ ПРОДАЖ ---
         const hitProductIds = [24, 16, 48, 15, 11, 6, 54, 12];
         const hitProducts = productData.filter(p => hitProductIds.includes(p.id));
         const sortedHitProducts = hitProductIds.map(id => hitProducts.find(p => p.id === id)).filter(p => p);
         renderProductGrid('.hits .grid', sortedHitProducts);
+        
+        // --- ЛОГИКА ДЛЯ КАРТИНОК КАТЕГОРИЙ ---
         lazyLoadImages();
+
+        // --- ВОЗВРАЩАЕМ ЛОГИКУ ДЛЯ ЛЕНИВОЙ ЗАГРУЗКИ ВИДЕО ---
+        const heroSection = document.querySelector('.hero-section');
+        if (heroSection) {
+            const video = heroSection.querySelector('.hero-video');
+            if (video && typeof video.play === 'function') {
+                video.addEventListener('canplaythrough', () => {
+                    heroSection.classList.add('video-loaded');
+                    video.play();
+                }, { once: true });
+            }
+        }
     } else if (document.body.id === 'cart-page') {
         renderCart();
         setupModal();
@@ -659,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initLiveSearch();
     updateCounters();
 
-    // --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v5.0 (с голосованием) ---
+    // --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v7.0 (с исправленными счетчиками) ---
     if (document.body.id === 'reviews-page') {
         const reviewsContainer = document.getElementById('reviews-container');
         const reviewForm = document.getElementById('review-form');
@@ -667,6 +660,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const API_BASE_URL = 'https://klas0.pythonanywhere.com';
 
+        // --- ЛОГИКА СЧЕТЧИКОВ СИМВОЛОВ ---
+        const setupCharCounter = (inputId, counterId, maxLength) => {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            if (input && counter) {
+                const updateCounter = () => {
+                    const remaining = maxLength - input.value.length;
+                    if (remaining < 0) {
+                        counter.textContent = 'Лимит превышен!';
+                        counter.classList.add('error');
+                    } else {
+                        counter.textContent = remaining;
+                        counter.classList.remove('error');
+                    }
+                };
+                input.addEventListener('input', updateCounter);
+                updateCounter(); 
+            }
+        };
+        setupCharCounter('review-name', 'name-char-counter', 50);
+        setupCharCounter('review-text', 'text-char-counter', 2000);
+        
         let userId = localStorage.getItem('reviewUserId');
         if (!userId) {
             userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 15);
@@ -736,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        reviewForm.addEventListener('submit', async (e) => {
+       reviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const ratingInput = reviewForm.querySelector('input[name="rating"]:checked');
             const nameInput = document.getElementById('review-name');
@@ -744,6 +759,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let isValid = true;
             if (!ratingInput) { alert('Пожалуйста, поставьте оценку (звездочки)'); return; }
             if (textInput.value.trim() === '') { textInput.parentElement.querySelector('.error-message').textContent = 'Напишите отзыв'; isValid = false; } else { textInput.parentElement.querySelector('.error-message').textContent = ''; }
+            if (nameInput.value.length > 50) { nameInput.parentElement.querySelector('.error-message').textContent = 'Имя слишком длинное'; isValid = false; }
+            if (textInput.value.length > 2000) { textInput.parentElement.querySelector('.error-message').textContent = 'Отзыв слишком длинный'; isValid = false; }
             if (!isValid) return;
             const submitButton = reviewForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
@@ -852,8 +869,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 formContainer.innerHTML = `
                     <form class="reply-form">
-                        <div class="form-group"><input type="text" class="reply-name" placeholder="Ваше имя" required></div>
-                        <div class="form-group"><textarea placeholder="Напишите ваш ответ..." rows="3" required>@${authorToReply}, </textarea></div>
+                        <div class="form-group"><input type="text" class="reply-name" placeholder="Ваше имя" required maxlength="50"></div>
+                        <div class="form-group"><textarea placeholder="Напишите ваш ответ..." rows="3" required maxlength="2000">@${authorToReply}, </textarea></div>
                         <div class="reply-form-buttons">
                             <button type="button" class="btn btn-secondary cancel-reply-btn">Отмена</button>
                             <button type="submit" class="btn">Отправить</button>

@@ -79,13 +79,19 @@
                             <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="Ужасно">★</label>
                         </div>
                         <div class="form-group">
-                            <label for="review-name">Ваше имя</label>
-                            <input type="text" id="review-name" placeholder="Как к вам обращаться? (необязательно)">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                <label for="review-name">Ваше имя</label>
+                                <span class="char-counter" id="name-char-counter">50</span>
+                            </div>
+                            <input type="text" id="review-name" placeholder="Как к вам обращаться? (необязательно)" maxlength="50">
                             <span class="error-message"></span>
                         </div>
                         <div class="form-group">
-                            <label for="review-text">Текст отзыва</label>
-                            <textarea id="review-text" placeholder="Расскажите, что вам понравилось или что можно улучшить..." rows="5" required></textarea>
+                            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                <label for="review-text">Текст отзыва</label>
+                                <span class="char-counter" id="text-char-counter">2000</span>
+                            </div>
+                            <textarea id="review-text" placeholder="Расскажите, что вам понравилось или что можно улучшить..." rows="5" required maxlength="2000"></textarea>
                             <span class="error-message"></span>
                         </div>
                         <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Отправить отзыв</button>
@@ -98,12 +104,11 @@
                         <div class="sort-reviews-wrapper">
                             <label for="reviews-sort">Сортировать:</label>
                             <select id="reviews-sort">
-                            <option value="newest">Сначала новые</option>
-                            <option value="oldest">Сначала старые</option>
-                            <option value="highest">С высоким рейтингом</option>
-                            <option value="lowest">С низким рейтингом</option>
-                            <option value="most_useful">Самые полезные</option>
-
+                                <option value="newest">Сначала новые</option>
+                                <option value="oldest">Сначала старые</option>
+                                <option value="highest">С высоким рейтингом</option>
+                                <option value="lowest">С низким рейтингом</option>
+                                <option value="most_useful">Самые полезные</option>
                             </select>
                         </div>
                     </div>
@@ -133,6 +138,7 @@
                         <li><a href="delivery.html">Доставка и оплата</a></li>
                         <li><a href="about.html">О компании</a></li>
                         <li><a href="contacts.html">Контакты</a></li>
+                        <li><a href="reviews.html">Отзывы</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -142,10 +148,13 @@
                 </div>
             </div>
         </div>
+        <div class="footer-bottom">
+            <p>© 2025 Охота и Рыбалка. Все права защищены.</p>
+        </div>
+    </footer>
     <div id="notification-container"></div>
 
     <script src="product_data.js"></script>
     <script src="script.js"></script>
-
 </body>
 </html>

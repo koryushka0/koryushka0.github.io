@@ -411,6 +411,18 @@ input.error, textarea.error { border-color: var(--accent-red); }
 .vote-score.positive { color: #4CAF50; }
 .vote-score.negative { color: var(--accent-red); }
 
+/* Стили для счетчика символов */
+.char-counter {
+    font-size: 0.8rem;
+    color: #999;
+    transition: color 0.2s ease;
+}
+.char-counter.error {
+    color: var(--accent-red);
+    font-weight: 600;
+}
+
+
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
 @media (max-width: 992px) {
     .catalog-layout { display: flex; flex-direction: column; }
