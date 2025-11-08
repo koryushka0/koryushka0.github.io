@@ -157,7 +157,11 @@ section { padding: calc(var(--spacing) * 3) 0; }
 .lazy-image-container {
     position: relative;
     overflow: hidden;
-    background-color: #eee; /* Светло-серый фон на всякий случай */
+    /* Создаем красивый градиент для фона */
+    background: linear-gradient(90deg, #eee 25%, #e0e0e0 50%, #eee 75%);
+    background-size: 200% 100%;
+    /* Запускаем анимацию */
+    animation: loading 1.5s infinite linear;
 }
 
 .lazy-image-container img {
@@ -439,4 +443,14 @@ input.error, textarea.error { border-color: var(--accent-red); }
         padding-left: 0.75rem !important;
     }
     .review-footer { flex-wrap: wrap; }
+}
+
+/* Анимация "скелетона" для загрузки изображений */
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
