@@ -578,6 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hitProducts = productData.filter(p => hitProductIds.includes(p.id));
         const sortedHitProducts = hitProductIds.map(id => hitProducts.find(p => p.id === id)).filter(p => p);
         renderProductGrid('.hits .grid', sortedHitProducts);
+        lazyLoadImages();
     } else if (document.body.id === 'cart-page') {
         renderCart();
         setupModal();
