@@ -951,14 +951,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ПРАВИЛЬНОЕ МЕСТО ДЛЯ ЭТИХ ОБРАБОТЧИКОВ
         const handlePaginationClick = (e) => {
-            const target = e.target.closest('.pagination-btn');
-            if (target) {
-                const page = parseInt(target.dataset.page, 10);
-                fetchAndRenderReviews(page);
-                const reviewsListTop = document.querySelector('.reviews-list').offsetTop;
-                window.scrollTo({ top: reviewsListTop - 100, behavior: 'smooth' });
-            }
-        };
+    // Ищем ближайшую кнопку со классом .pagination-arrow
+    const target = e.target.closest('.pagination-arrow');
+    if (target && !target.disabled) { // Проверяем, что кнопка не выключена
+        const page = parseInt(target.dataset.page, 10);
+        fetchAndRenderReviews(page);
+        const reviewsListTop = document.querySelector('.reviews-list').offsetTop;
+        window.scrollTo({ top: reviewsListTop - 100, behavior: 'smooth' });
+    }
+};
+
 
         if(paginationTop) paginationTop.addEventListener('click', handlePaginationClick);
         if(paginationBottom) paginationBottom.addEventListener('click', handlePaginationClick);
