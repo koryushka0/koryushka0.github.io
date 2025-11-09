@@ -9,6 +9,10 @@
     --text-light: #FFFFFF;
     --border-color: #E0E0E0;
     --spacing: 1rem;
+
+    --bg-light-translucent: rgba(245, 245, 245, 0.8);
+    --surface-translucent: rgba(255, 255, 255, 0.8);
+    --bg-dark-translucent: rgba(38, 50, 56, 0.85);
 }
 
 ::selection {
@@ -608,6 +612,80 @@ input.error, textarea.error { border-color: var(--accent-red); }
     }
     .about-hero h1 {
         font-size: 2.2rem;
+    }
+}
+/* ======================================================= */
+
+
+/* === НОВЫЕ СТИЛИ ДЛЯ ФОНОВЫХ ГРАДИЕНТНЫХ ПЯТЕН === */
+
+.background-blobs {
+    position: fixed; /* Фиксируем на экране, чтобы они не прокручивались с контентом */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1; /* !!! Важно: отправляем их на самый задний план */
+    overflow: hidden; /* Скрываем части, которые выходят за экран */
+    pointer-events: none; /* !!! Важно: чтобы они не мешали кликать по сайту */
+}
+
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px); /* Сильное размытие для мягкого эффекта */
+    opacity: 0.2; /* Делаем их полупрозрачными */
+    will-change: transform; /* Оптимизация для анимации */
+    animation: move 30s infinite alternate; /* Запускаем анимацию движения */
+}
+
+/* Первое пятно */
+.blob1 {
+    width: 500px;
+    height: 500px;
+    top: -150px;
+    left: -150px;
+    background: radial-gradient(circle, var(--secondary) 0%, rgba(0,172,193,0) 70%);
+}
+
+/* Второе пятно */
+.blob2 {
+    width: 600px;
+    height: 600px;
+    bottom: -200px;
+    right: -200px;
+    background: radial-gradient(circle, var(--primary) 0%, rgba(69,90,100,0) 70%);
+    animation-duration: 40s; /* Двигается медленнее */
+    animation-delay: -10s; /* Начинает с другой позиции в цикле анимации */
+}
+
+/* Третье пятно (меньше и в другом месте) */
+.blob3 {
+    width: 400px;
+    height: 400px;
+    top: 50%;
+    left: 40%;
+    background: radial-gradient(circle, #ffab40 0%, rgba(255,171,64,0) 70%); /* Добавим теплый оранжевый оттенок */
+    animation-duration: 25s;
+    opacity: 0.15;
+}
+
+/* Анимация движения */
+@keyframes move {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    25% {
+        transform: translate(100px, -50px) scale(1.1);
+    }
+    50% {
+        transform: translate(-150px, 100px) scale(0.9);
+    }
+    75% {
+        transform: translate(50px, 150px) scale(1.2);
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
     }
 }
 /* ======================================================= */
