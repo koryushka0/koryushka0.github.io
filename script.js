@@ -723,22 +723,31 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         const renderPaginationControls = (totalPages, currentPage) => {
-            if (totalPages <= 1) {
-                paginationTop.innerHTML = '';
-                paginationBottom.innerHTML = '';
-                return;
-            }
-            let buttonsHTML = '';
-            if (currentPage > 1) {
-                buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage - 1}">← Назад</button>`;
-            }
-            buttonsHTML += `<span class="pagination-info">Стр. ${currentPage} из ${totalPages}</span>`;
-            if (currentPage < totalPages) {
-                buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage + 1}">Вперед →</button>`;
-            }
-            paginationTop.innerHTML = buttonsHTML;
-            paginationBottom.innerHTML = buttonsHTML;
-        };
+    if (totalPages <= 1) {
+        paginationTop.innerHTML = '';
+        paginationBottom.innerHTML = '';
+        return;
+    }
+
+    // SVG иконки для стрелок
+    const arrowLeftSVG = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>`;
+    const arrowRightSVG = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>`;
+
+    // Генерируем HTML для пагинации
+    const buttonsHTML = `
+        <button class="pagination-arrow" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+            ${arrowLeftSVG}
+        </button>
+        <span class="pagination-info">Стр. ${currentPage} из ${totalPages}</span>
+        <button class="pagination-arrow" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+            ${arrowRightSVG}
+        </button>
+    `;
+    
+    paginationTop.innerHTML = buttonsHTML;
+    paginationBottom.innerHTML = buttonsHTML;
+};
+
 
         const fetchAndRenderReviews = async (page = 1) => {
             const sortBy = sortSelect.value;

@@ -694,26 +694,62 @@ input.error, textarea.error { border-color: var(--accent-red); }
 /* ======================================================= */
 
 
-/* === СТИЛИ ДЛЯ ПАГИНАЦИИ === */
+/* === НОВЫЕ СТИЛИ ДЛЯ ПАГИНАЦИИ === */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
-    margin: 2rem 0; /* Отступы сверху и снизу */
+    gap: 1.5rem; /* Немного увеличим отступ */
+    margin: 2rem 0;
 }
 
 .pagination-info {
     font-weight: 600;
-    color: #777;
-    white-space: nowrap; /* Чтобы текст не переносился */
+    color: #555; /* Сделаем текст чуть темнее */
+    white-space: nowrap;
+    font-size: 1.1rem; /* И чуть крупнее */
 }
 
-.pagination-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
+/* Стили для кнопок-стрелок */
+.pagination-arrow {
+    background-color: var(--surface);
+    border: 1px solid var(--border-color);
+    color: var(--primary);
+    width: 44px; /* Фиксированный размер */
+    height: 44px;
+    border-radius: 50%; /* Делаем их круглыми */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Легкая тень */
 }
-/* ============================ */
+
+.pagination-arrow svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2.5; /* Более жирные линии */
+}
+
+/* Эффект при наведении */
+.pagination-arrow:not(:disabled):hover {
+    background-color: var(--primary);
+    color: var(--text-light);
+    border-color: var(--primary);
+    transform: scale(1.05); /* Немного увеличиваем */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Стили для НЕАКТИВНОЙ стрелки */
+.pagination-arrow:disabled {
+    background-color: var(--bg-light);
+    color: #ccc; /* Бледный цвет */
+    border-color: #eee;
+    cursor: not-allowed; /* Курсор "запрещено" */
+    box-shadow: none;
+}
+/* ======================================= */
 
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
 @media (max-width: 992px) {
