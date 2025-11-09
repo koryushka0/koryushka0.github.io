@@ -565,28 +565,7 @@ input.error, textarea.error { border-color: var(--accent-red); }
 }
 /* ====================================================== */
 
-/* === НОВЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ "О КОМПАНИИ" === */
 
-.about-hero {
-    background: linear-gradient(rgba(38, 50, 56, 0.7), rgba(38, 50, 56, 0.7)), url('assets/images/category_hunting.jpg') no-repeat center center;
-    background-size: cover;
-    color: var(--text-light);
-    padding: 5rem 0;
-    text-align: center;
-}
-
-.about-hero h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-}
-
-.about-hero p {
-    font-size: 1.2rem;
-    max-width: 600px;
-    margin: 0.5rem auto 0;
-    opacity: 0.9;
-}
 
 .features-section .info-card {
     background-color: #37474F; /* Чуть светлее фона секции */
@@ -604,17 +583,6 @@ input.error, textarea.error { border-color: var(--accent-red); }
 .features-section .info-icon {
     background-color: #455A64;
 }
-
-/* Адаптация для мобильных */
-@media (max-width: 768px) {
-    .about-hero {
-        padding: 3rem 0;
-    }
-    .about-hero h1 {
-        font-size: 2.2rem;
-    }
-}
-/* ======================================================= */
 
 
 /* === НОВЫЕ СТИЛИ ДЛЯ ФОНОВЫХ ГРАДИЕНТНЫХ ПЯТЕН === */
@@ -688,6 +656,36 @@ input.error, textarea.error { border-color: var(--accent-red); }
         transform: translate(0, 0) scale(1);
     }
 }
+/* ======================================================= */
+
+
+/* === СТИЛИ ДЛЯ СТРАНИЦЫ-ЗАГЛУШКИ "ПРИЛОЖЕНИЕ" === */
+
+.coming-soon-container {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 3rem 0;
+}
+
+.coming-soon-icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 2rem;
+}
+
+.coming-soon-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke: var(--secondary);
+    stroke-width: 1.5;
+}
+
+.coming-soon-container h2 {
+    font-size: 2.5rem;
+    color: var(--primary);
+}
+
 /* ======================================================= */
 
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
