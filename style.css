@@ -457,6 +457,160 @@ input.error, textarea.error { border-color: var(--accent-red); }
     font-weight: 600;
 }
 
+/* === НОВЫЕ СТИЛИ ДЛЯ ИНФОРМАЦИОННЫХ СТРАНИЦ === */
+
+.info-card-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.info-block-title {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--primary);
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.info-block-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background-color: var(--secondary);
+    margin: 0.5rem auto 0;
+}
+
+.info-card {
+    background-color: var(--surface);
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.info-card p {
+    color: #555;
+    line-height: 1.7;
+}
+
+.info-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1.5rem auto;
+    background-color: var(--bg-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-icon svg {
+    width: 32px;
+    height: 32px;
+    stroke: var(--secondary);
+    stroke-width: 1.5;
+}
+
+.info-icon.small {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.info-icon.small svg {
+    width: 24px;
+    height: 24px;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.contact-item strong {
+    display: block;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.contact-item p {
+    margin: 0;
+    color: #555;
+}
+/* ====================================================== */
+
+/* === НОВЫЕ СТИЛИ ДЛЯ СТРАНИЦЫ "О КОМПАНИИ" === */
+
+.about-hero {
+    background: linear-gradient(rgba(38, 50, 56, 0.7), rgba(38, 50, 56, 0.7)), url('assets/images/category_hunting.jpg') no-repeat center center;
+    background-size: cover;
+    color: var(--text-light);
+    padding: 5rem 0;
+    text-align: center;
+}
+
+.about-hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+}
+
+.about-hero p {
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: 0.5rem auto 0;
+    opacity: 0.9;
+}
+
+.features-section .info-card {
+    background-color: #37474F; /* Чуть светлее фона секции */
+    border-color: #455A64;
+}
+
+.features-section .info-card h4 {
+    color: var(--text-light);
+}
+
+.features-section .info-card p {
+    color: #CFD8DC; /* Светло-серый текст на темном фоне */
+}
+
+.features-section .info-icon {
+    background-color: #455A64;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+    .about-hero {
+        padding: 3rem 0;
+    }
+    .about-hero h1 {
+        font-size: 2.2rem;
+    }
+}
+/* ======================================================= */
 
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
 @media (max-width: 992px) {
