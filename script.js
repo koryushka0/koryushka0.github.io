@@ -652,118 +652,126 @@ document.addEventListener('DOMContentLoaded', () => {
     initLiveSearch();
     updateCounters();
 
-    // --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ v7.0 (с исправленными счетчиками) ---
+    // --- ФИНАЛЬНАЯ ЛОГИКА ДЛЯ СИСТЕМЫ ОТЗЫВОВ ---
     if (document.body.id === 'reviews-page') {
-    const reviewsContainer = document.getElementById('reviews-container');
-    const reviewForm = document.getElementById('review-form');
-    const sortSelect = document.getElementById('reviews-sort');
-    // НОВОЕ: Контейнер для кнопок пагинации
-    const paginationContainer = document.getElementById('pagination-controls');
+        const reviewsContainer = document.getElementById('reviews-container');
+        const reviewForm = document.getElementById('review-form');
+        const sortSelect = document.getElementById('reviews-sort');
+        const paginationTop = document.getElementById('pagination-controls-top');
+        const paginationBottom = document.getElementById('pagination-controls-bottom');
 
-    const API_BASE_URL = 'https://klas0.pythonanywhere.com';
+        const API_BASE_URL = 'https://klas0.pythonanywhere.com';
 
-    // --- ЛОГИКА СЧЕТЧИКОВ СИМВОЛОВ (без изменений) ---
-    const setupCharCounter = (inputId, counterId, maxLength) => {
-        const input = document.getElementById(inputId);
-        const counter = document.getElementById(counterId);
-        if (input && counter) {
-            const updateCounter = () => {
-                const remaining = maxLength - input.value.length;
-                counter.textContent = remaining < 0 ? 'Лимит!' : remaining;
-                counter.classList.toggle('error', remaining < 0);
-            };
-            input.addEventListener('input', updateCounter);
-            updateCounter();
+        const setupCharCounter = (inputId, counterId, maxLength) => {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            if (input && counter) {
+                const updateCounter = () => {
+                    const remaining = maxLength - input.value.length;
+                    counter.textContent = remaining < 0 ? 'Лимит!' : remaining;
+                    counter.classList.toggle('error', remaining < 0);
+                };
+                input.addEventListener('input', updateCounter);
+                updateCounter();
+            }
+        };
+        setupCharCounter('review-name', 'name-char-counter', 50);
+        setupCharCounter('review-text', 'text-char-counter', 2000);
+
+        let userId = localStorage.getItem('reviewUserId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('reviewUserId', userId);
         }
-    };
-    setupCharCounter('review-name', 'name-char-counter', 50);
-    setupCharCounter('review-text', 'text-char-counter', 2000);
 
-    let userId = localStorage.getItem('reviewUserId');
-    if (!userId) {
-        userId = 'user_' + Date.now() + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('reviewUserId', userId);
-    }
-    
-    // Переменная для хранения текущей страницы
-    let currentPage = 1;
-
+        let currentPage = 1;
 
         const createStarRating = (rating) => {
-        if (!rating) return '';
-        const starSVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"/></svg>`;
-        return `<div class="review-rating">${Array.from({length: 5}, (_, i) => `<span class="star ${i < rating ? '' : 'empty'}">${starSVG}</span>`).join('')}</div>`;
-    };
+            if (!rating) return '';
+            const starSVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.15316 5.40838C10.4198 3.13613 11.0531 2 12 2C12.9469 2 13.5802 3.13612 14.8468 5.40837L15.1745 5.99623C15.5345 6.64193 15.7144 6.96479 15.9951 7.17781C16.2757 7.39083 16.6251 7.4699 17.3241 7.62805L17.9605 7.77203C20.4201 8.32856 21.65 8.60682 21.9426 9.54773C22.2352 10.4886 21.3968 11.4691 19.7199 13.4299L19.2861 13.9372C18.8096 14.4944 18.5713 14.773 18.4641 15.1177C18.357 15.4624 18.393 15.8341 18.465 16.5776L18.5306 17.2544C18.7841 19.8706 18.9109 21.1787 18.1449 21.7602C17.3788 22.3417 16.2273 21.8115 13.9243 20.7512L13.3285 20.4768C12.6741 20.1755 12.3469 20.0248 12 20.0248C11.6531 20.0248 11.3259 20.1755 10.6715 20.4768L10.0757 20.7512C7.77268 21.8115 6.62118 22.3417 5.85515 21.7602C5.08912 21.1787 5.21588 19.8706 5.4694 17.2544L5.53498 16.5776C5.60703 15.8341 5.64305 15.4624 5.53586 15.1177C5.42868 14.773 5.19043 14.4944 4.71392 13.9372L4.2801 13.4299C2.60325 11.4691 1.76482 10.4886 2.05742 9.54773C2.35002 8.60682 3.57986 8.32856 6.03954 7.77203L6.67589 7.62805C7.37485 7.4699 7.72433 7.39083 8.00494 7.17781C8.28555 6.96479 8.46553 6.64194 8.82547 5.99623L9.15316 5.40838Z"/></svg>`;
+            return `<div class="review-rating">${Array.from({length: 5}, (_, i) => `<span class="star ${i < rating ? '' : 'empty'}">${starSVG}</span>`).join('')}</div>`;
+        };
 
-    const createReviewHTML = (review) => {
-        const date = new Date(review.timestamp + 'Z');
-        const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
-        const score = (review.upvotes || 0) - (review.downvotes || 0);
-        const scoreClass = score > 0 ? 'positive' : score < 0 ? 'negative' : '';
-        const scoreText = score > 0 ? `+${score}` : score;
+        const createReviewHTML = (review) => {
+            const date = new Date(review.timestamp + 'Z');
+            const formattedDate = date.toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const adminBadgeSVG = `<svg class="admin-badge" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>`;
+            const score = (review.upvotes || 0) - (review.downvotes || 0);
+            const scoreClass = score > 0 ? 'positive' : score < 0 ? 'negative' : '';
+            const scoreText = score > 0 ? `+${score}` : (score < 0 ? score : '0');
+            const reviewTextHtml = review.text.replace(/\n/g, '<br>');
 
-        return `<div class="review-card" id="review-${review.id}"><div class="review-voting"><button class="vote-btn up ${review.user_vote === 1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg></button><span class="vote-score ${scoreClass}" id="score-${review.id}">${scoreText}</span><button class="vote-btn down ${review.user_vote === -1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="-1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button></div><div class="review-content"><div class="review-header">${review.is_admin_reply ? `${adminBadgeSVG}<span class="review-author admin">${review.name}</span>` : `<span class="review-author">${review.name}</span>`}</div>${createStarRating(review.rating)}<p class="review-text">${review.text.replace(/\n/g, '<br>')}</p><div class="review-footer"><span class="review-date">${formattedDate}</span><button class="reply-btn" data-parent-id="${review.parent_id || review.id}" data-author="${review.name}">Ответить</button>${review.reply_count > 0 ? `<button class="reply-btn show-replies-btn" data-parent-id="${review.id}">💬 Показать ответы (${review.reply_count})</button>` : ''}</div><div class="replies-container" id="replies-for-${review.id}"></div><div class="reply-form-container" id="reply-form-for-${review.id}"></div></div></div>`;
-    };
-
-    // НОВОЕ: Функция для отрисовки кнопок пагинации
-    const renderPaginationControls = (totalPages, currentPage) => {
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-        let buttonsHTML = '';
-        if (currentPage > 1) {
-            buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage - 1}">← Назад</button>`;
-        }
-        buttonsHTML += `<span class="pagination-info">Стр. ${currentPage} из ${totalPages}</span>`;
-        if (currentPage < totalPages) {
-            buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage + 1}">Вперед →</button>`;
-        }
-        paginationContainer.innerHTML = buttonsHTML;
-    };
-
-        const fetchAndRenderReviews = async (page = 1) => {
-        const sortBy = sortSelect.value;
-        reviewsContainer.innerHTML = '<p class="loading-text">Загрузка отзывов...</p>';
-        paginationContainer.innerHTML = ''; // Очищаем кнопки на время загрузки
-        try {
-            // Добавляем параметры page и limit (количество на странице) в URL
-            const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}&user_id=${userId}&page=${page}&limit=10`);
-            if (!response.ok) throw new Error('Ошибка загрузки отзывов');
-            
-            // ИЗМЕНЕНО: Получаем объект с данными, а не просто массив
-            const data = await response.json();
-            const reviews = data.reviews; // <<< ВОТ КЛЮЧЕВОЕ ИЗМЕНЕНИЕ!
-            
-            if (!reviews || reviews.length === 0) {
-                reviewsContainer.innerHTML = '<p class="empty-text">Отзывов пока нет. Будьте первым!</p>';
+            return `<div class="review-card" id="review-${review.id}">
+                <div class="review-voting">
+                    <button class="vote-btn up ${review.user_vote === 1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path></svg></button>
+                    <span class="vote-score ${scoreClass}" id="score-${review.id}">${scoreText}</span>
+                    <button class="vote-btn down ${review.user_vote === -1 ? 'voted' : ''}" data-review-id="${review.id}" data-vote-type="-1"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></button>
+                </div>
+                <div class="review-content">
+                    <div class="review-header">${review.is_admin_reply ? `${adminBadgeSVG}<span class="review-author admin">${review.name}</span>` : `<span class="review-author">${review.name}</span>`}</div>
+                    ${createStarRating(review.rating)}
+                    <p class="review-text">${reviewTextHtml}</p>
+                    <div class="review-footer">
+                        <span class="review-date">${formattedDate}</span>
+                        <button class="reply-btn" data-parent-id="${review.parent_id || review.id}" data-author="${review.name}">Ответить</button>
+                        ${review.reply_count > 0 ? `<button class="reply-btn show-replies-btn" data-parent-id="${review.id}">💬 Показать ответы (${review.reply_count})</button>` : ''}
+                    </div>
+                    <div class="replies-container" id="replies-for-${review.id}"></div>
+                    <div class="reply-form-container" id="reply-form-for-${review.id}"></div>
+                </div>
+            </div>`;
+        };
+        
+        const renderPaginationControls = (totalPages, currentPage) => {
+            if (totalPages <= 1) {
+                paginationTop.innerHTML = '';
+                paginationBottom.innerHTML = '';
                 return;
             }
-            
-            reviewsContainer.innerHTML = reviews.map(createReviewHTML).join('');
-            
-            // НОВОЕ: Отрисовываем пагинацию на основе данных от сервера
-            currentPage = data.current_page;
-            renderPaginationControls(data.total_pages, data.current_page);
+            let buttonsHTML = '';
+            if (currentPage > 1) {
+                buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage - 1}">← Назад</button>`;
+            }
+            buttonsHTML += `<span class="pagination-info">Стр. ${currentPage} из ${totalPages}</span>`;
+            if (currentPage < totalPages) {
+                buttonsHTML += `<button class="btn pagination-btn" data-page="${currentPage + 1}">Вперед →</button>`;
+            }
+            paginationTop.innerHTML = buttonsHTML;
+            paginationBottom.innerHTML = buttonsHTML;
+        };
 
-        } catch (error) {
-            console.error(error);
-            reviewsContainer.innerHTML = '<p class="error-text">Не удалось загрузить отзывы.</p>';
-        }
-    };
+        const fetchAndRenderReviews = async (page = 1) => {
+            const sortBy = sortSelect.value;
+            reviewsContainer.innerHTML = '<p class="loading-text" style="text-align: center; color: #999;">Загрузка отзывов...</p>';
+            paginationTop.innerHTML = ''; 
+            paginationBottom.innerHTML = '';
+            try {
+                const response = await fetch(`${API_BASE_URL}/get-reviews?sort=${sortBy}&user_id=${userId}&page=${page}&limit=10`);
+                if (!response.ok) throw new Error('Ошибка загрузки отзывов');
+                const data = await response.json();
+                const reviews = data.reviews;
+                if (!reviews || reviews.length === 0) {
+                    reviewsContainer.innerHTML = '<p class="empty-text" style="text-align: center; color: #999;">Отзывов пока нет. Будьте первым!</p>';
+                    return;
+                }
+                reviewsContainer.innerHTML = reviews.map(createReviewHTML).join('');
+                currentPage = data.current_page;
+                renderPaginationControls(data.total_pages, data.current_page);
+            } catch (error) {
+                console.error(error);
+                reviewsContainer.innerHTML = '<p class="error-text" style="text-align: center; color: var(--accent-red);">Не удалось загрузить отзывы.</p>';
+            }
+        };
 
-       reviewForm.addEventListener('submit', async (e) => {
+        reviewForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const ratingInput = reviewForm.querySelector('input[name="rating"]:checked');
             const nameInput = document.getElementById('review-name');
             const textInput = document.getElementById('review-text');
-            let isValid = true;
-            if (!ratingInput) { alert('Пожалуйста, поставьте оценку (звездочки)'); return; }
-            if (textInput.value.trim() === '') { textInput.parentElement.querySelector('.error-message').textContent = 'Напишите отзыв'; isValid = false; } else { textInput.parentElement.querySelector('.error-message').textContent = ''; }
-            if (nameInput.value.length > 50) { nameInput.parentElement.querySelector('.error-message').textContent = 'Имя слишком длинное'; isValid = false; }
-            if (textInput.value.length > 2000) { textInput.parentElement.querySelector('.error-message').textContent = 'Отзыв слишком длинный'; isValid = false; }
-            if (!isValid) return;
+            if (!ratingInput) { showNotification('Пожалуйста, поставьте оценку (звездочки)'); return; }
+            if (textInput.value.trim() === '') { showNotification('Текст отзыва не может быть пустым'); return; }
+            if (nameInput.value.length > 50 || textInput.value.length > 2000) { showNotification('Превышен лимит символов в имени или тексте отзыва.'); return; }
+
             const submitButton = reviewForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Отправка...';
@@ -779,10 +787,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
+                
                 if (result.review) {
-                    const newReviewHTML = createReviewHTML(result.review);
-                    reviewsContainer.insertAdjacentHTML('afterbegin', newReviewHTML);
+                    fetchAndRenderReviews(1); // Перезагружаем отзывы с первой страницы
                     reviewForm.reset();
+                    setupCharCounter('review-name', 'name-char-counter', 50);
+                    setupCharCounter('review-text', 'text-char-counter', 2000);
                     showNotification('Ваш отзыв опубликован!');
                 } else {
                     const thanksModal = document.createElement('div');
@@ -794,16 +804,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error(error);
-                showNotification('Не удалось отправить отзыв');
+                showNotification(`Ошибка: ${error.message}`);
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Отправить отзыв';
             }
         });
-        
+
         reviewsContainer.addEventListener('click', async (e) => {
             const target = e.target;
             const voteButton = target.closest('.vote-btn');
+            
             if (voteButton) {
                 const reviewId = voteButton.dataset.reviewId;
                 const voteType = parseInt(voteButton.dataset.voteType);
@@ -816,12 +827,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
+                    
                     const scoreEl = document.getElementById(`score-${reviewId}`);
                     const score = result.upvotes - result.downvotes;
-                    scoreEl.textContent = `${score > 0 ? '+' : ''}${score}`;
+                    const scoreText = score > 0 ? `+${score}` : (score < 0 ? score : '0');
+                    scoreEl.textContent = scoreText;
                     scoreEl.className = 'vote-score';
                     if (score > 0) scoreEl.classList.add('positive');
                     if (score < 0) scoreEl.classList.add('negative');
+
                     const parentCard = voteButton.closest('.review-card');
                     const upBtn = parentCard.querySelector('.vote-btn.up');
                     const downBtn = parentCard.querySelector('.vote-btn.down');
@@ -840,27 +854,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            paginationContainer.addEventListener('click', (e) => {
-        const target = e.target.closest('.pagination-btn');
-        if (target) {
-            const page = parseInt(target.dataset.page, 10);
-            fetchAndRenderReviews(page);
-            window.scrollTo({ top: reviewsContainer.offsetTop - 100, behavior: 'smooth' });
-        }
-    });
-
-    // При смене сортировки всегда переходим на первую страницу
-    sortSelect.addEventListener('change', () => fetchAndRenderReviews(1));
-    
-    // Первоначальная загрузка
-    fetchAndRenderReviews();
-
             if (target.classList.contains('show-replies-btn')) {
                 const parentId = target.dataset.parentId;
                 const repliesContainer = document.getElementById(`replies-for-${parentId}`);
                 if (repliesContainer.style.display === 'block') {
                     repliesContainer.style.display = 'none';
-                    target.textContent = `💬 Показать ответы (${repliesContainer.children.length})`;
+                    const currentCount = repliesContainer.querySelectorAll('.review-card').length;
+                    target.textContent = `💬 Показать ответы (${currentCount})`;
                 } else {
                     try {
                         const response = await fetch(`${API_BASE_URL}/get-replies?parent_id=${parentId}&user_id=${userId}`);
@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         target.textContent = '⬆ Скрыть ответы';
                     } catch (error) {
                         console.error("Не удалось загрузить ответы:", error);
-                        repliesContainer.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">Не удалось загрузить ответы. Попробуйте позже.</p>';
+                        repliesContainer.innerHTML = '<p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">Не удалось загрузить ответы.</p>';
                         repliesContainer.style.display = 'block';
                     }
                 }
@@ -898,6 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 formContainer.querySelector('textarea').focus();
                 formContainer.querySelector('.cancel-reply-btn').addEventListener('click', () => {
                     formContainer.style.display = 'none';
+                    formContainer.innerHTML = '';
                 });
                 formContainer.querySelector('.reply-form').addEventListener('submit', async (submitEvent) => {
                     submitEvent.preventDefault();
@@ -913,13 +914,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         const result = await response.json();
                         if (!response.ok) throw new Error(result.message || 'Ошибка сервера');
+                        
                         formContainer.innerHTML = '';
                         formContainer.style.display = 'none';
+                        
                         if (result.review) {
                             showNotification('Ваш ответ опубликован!');
                             const repliesContainer = document.getElementById(`replies-for-${parentId}`);
                             if (repliesContainer.style.display !== 'block') {
-                                target.closest('.review-card').querySelector('.show-replies-btn')?.click();
+                                const showRepliesBtn = target.closest('.review-card').querySelector('.show-replies-btn');
+                                if (showRepliesBtn) {
+                                    showRepliesBtn.click();
+                                } else {
+                                    fetchAndRenderReviews(currentPage);
+                                }
                             } else {
                                 const newReplyHTML = createReviewHTML(result.review);
                                 repliesContainer.insertAdjacentHTML('beforeend', newReplyHTML);
@@ -927,12 +935,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             showNotification('Ваш ответ отправлен на модерацию!');
                         }
-                    } catch (error) { showNotification('Ошибка отправки ответа'); }
+                    } catch (error) { showNotification(`Ошибка: ${error.message}`); }
                 });
             }
         });
 
-        sortSelect.addEventListener('change', fetchAndRenderReviews);
+        // ПРАВИЛЬНОЕ МЕСТО ДЛЯ ЭТИХ ОБРАБОТЧИКОВ
+        const handlePaginationClick = (e) => {
+            const target = e.target.closest('.pagination-btn');
+            if (target) {
+                const page = parseInt(target.dataset.page, 10);
+                fetchAndRenderReviews(page);
+                const reviewsListTop = document.querySelector('.reviews-list').offsetTop;
+                window.scrollTo({ top: reviewsListTop - 100, behavior: 'smooth' });
+            }
+        };
+
+        if(paginationTop) paginationTop.addEventListener('click', handlePaginationClick);
+        if(paginationBottom) paginationBottom.addEventListener('click', handlePaginationClick);
+        
+        sortSelect.addEventListener('change', () => fetchAndRenderReviews(1));
+        
+        // Первоначальная загрузка отзывов
         fetchAndRenderReviews();
     }
 });

@@ -693,6 +693,28 @@ input.error, textarea.error { border-color: var(--accent-red); }
 
 /* ======================================================= */
 
+
+/* === СТИЛИ ДЛЯ ПАГИНАЦИИ === */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0; /* Отступы сверху и снизу */
+}
+
+.pagination-info {
+    font-weight: 600;
+    color: #777;
+    white-space: nowrap; /* Чтобы текст не переносился */
+}
+
+.pagination-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+/* ============================ */
+
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
 @media (max-width: 992px) {
     .catalog-layout { display: flex; flex-direction: column; }
