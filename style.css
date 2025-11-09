@@ -410,7 +410,12 @@ input.error, textarea.error { border-color: var(--accent-red); }
 .review-card { background: var(--surface); padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--border-color); transition: box-shadow 0.3s ease; position: relative; }
 .review-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .review-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; padding-right: 80px; }
-.review-author { font-weight: 700; font-size: 1.1rem; }
+.review-author {
+    font-weight: 700;
+    font-size: 1.1rem;
+    white-space: normal;  /* Разрешаем тексту переноситься на новую строку */
+    word-break: break-word; /* Разрешаем разрывать очень длинные слова без пробелов */
+}
 .review-author.admin { color: var(--secondary); }
 .admin-badge { width: 20px; height: 20px; fill: var(--secondary); }
 .review-rating { display: flex; margin-bottom: 0.75rem; }
