@@ -694,20 +694,19 @@ input.error, textarea.error { border-color: var(--accent-red); }
 /* ======================================================= */
 
 
-/* === НОВЫЕ СТИЛИ ДЛЯ ПАГИНАЦИИ === */
+/* === ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ПАГИНАЦИИ === */
 .pagination-controls {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5rem; /* Немного увеличим отступ */
-    margin: 2rem 0;
+    gap: 1.5rem;
+    /* УБИРАЕМ MARGIN ОТСЮДА */
 }
 
-.pagination-info {
-    font-weight: 600;
-    color: #555; /* Сделаем текст чуть темнее */
-    white-space: nowrap;
-    font-size: 1.1rem; /* И чуть крупнее */
+/* ДОБАВЛЯЕМ НОВОЕ ПРАВИЛО: */
+/* Применяем отступы ТОЛЬКО ЕСЛИ контейнер НЕ ПУСТОЙ */
+.pagination-controls:not(:empty) {
+    margin: 2rem 0;
 }
 
 /* Стили для кнопок-стрелок */
@@ -715,21 +714,21 @@ input.error, textarea.error { border-color: var(--accent-red); }
     background-color: var(--surface);
     border: 1px solid var(--border-color);
     color: var(--primary);
-    width: 44px; /* Фиксированный размер */
+    width: 44px;
     height: 44px;
-    border-radius: 50%; /* Делаем их круглыми */
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease-out;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Легкая тень */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .pagination-arrow svg {
     width: 24px;
     height: 24px;
-    stroke-width: 2.5; /* Более жирные линии */
+    stroke-width: 2.5;
 }
 
 /* Эффект при наведении */
@@ -737,16 +736,16 @@ input.error, textarea.error { border-color: var(--accent-red); }
     background-color: var(--primary);
     color: var(--text-light);
     border-color: var(--primary);
-    transform: scale(1.05); /* Немного увеличиваем */
+    transform: scale(1.05);
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /* Стили для НЕАКТИВНОЙ стрелки */
 .pagination-arrow:disabled {
     background-color: var(--bg-light);
-    color: #ccc; /* Бледный цвет */
+    color: #ccc;
     border-color: #eee;
-    cursor: not-allowed; /* Курсор "запрещено" */
+    cursor: not-allowed;
     box-shadow: none;
 }
 /* ======================================= */
