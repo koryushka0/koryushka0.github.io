@@ -123,6 +123,36 @@
                     <iframe src="https://yandex.ru/map-widget/v1/?ll=132.351145%2C43.107820&mode=search&oid=163851135949&ol=biz&z=16.63"></iframe>
                 </div>
             </div>
+
+            <div class="contact-form-section">
+                    <div class="contact-form-container">
+                        <h3>Обратная связь</h3>
+                        
+                        <div class="bot-instruction">
+                            <p>Чтобы мы могли ответить вам прямо в Telegram, пожалуйста, сначала "познакомьтесь" с нашим ботом — просто нажмите на кнопку ниже и отправьте ему команду <strong>/start</strong>. После этого возвращайтесь и задавайте свой вопрос!</p>
+                            <a href="https://t.me/KoryushkaSuperStoreBot" target="_blank" class="btn" style="margin-top: 1rem;">Начать диалог с ботом</a>
+                        </div>
+
+                        <form id="contact-form" novalidate>
+                            <div class="form-group">
+                                <label for="contact-name">Ваше имя (необязательно)</label>
+                                <input type="text" id="contact-name" placeholder="Как к вам обращаться?">
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-tg-username">Ваш юзернейм в Telegram</label>
+                                <input type="text" id="contact-tg-username" placeholder="@username" required>
+                                <span class="error-message"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-question">Ваш вопрос</label>
+                                <textarea id="contact-question" placeholder="Спрашивайте что угодно, мы постараемся помочь!" rows="5" required></textarea>
+                                <span class="error-message"></span>
+                            </div>
+                            <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Отправить вопрос</button>
+                        </form>
+                    </div>
+                </div>
+
         </div>
     </section>
 </main>
