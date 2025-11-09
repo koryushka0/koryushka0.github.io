@@ -750,49 +750,6 @@ input.error, textarea.error { border-color: var(--accent-red); }
 }
 /* ======================================= */
 
-/* === Стили для формы обратной связи на странице контактов === */
-.contact-form-section {
-    max-width: 700px;
-    margin: 2rem auto 0; /* Отступ сверху */
-    padding-top: 3rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.contact-form-container {
-    background: var(--surface);
-    padding: 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-}
-
-.contact-form-container h3 {
-    text-align: center;
-    font-size: 1.8rem;
-    margin-top: 0;
-    margin-bottom: 2rem;
-    color: var(--primary);
-}
-
-/* Стили для информационного блока-инструкции */
-.bot-instruction {
-    background-color: var(--bg-light);
-    border: 1px solid var(--border-color);
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    text-align: center;
-}
-
-.bot-instruction p {
-    margin: 0;
-    color: #555;
-    line-height: 1.7;
-}
-
-.bot-instruction .btn {
-    margin-top: 1rem;
-}
-
 /* === ВСЕ МОБИЛЬНЫЕ СТИЛИ СОБРАНЫ В ОДНОМ МЕСТЕ В КОНЦЕ ФАЙЛА === */
 @media (max-width: 992px) {
     .catalog-layout { display: flex; flex-direction: column; }
