@@ -377,8 +377,27 @@ input.error, textarea.error { border-color: var(--accent-red); }
 .review-form-container .form-subtitle { text-align: center; color: #999; margin-bottom: 2rem; }
 .rating-group { display: flex; justify-content: center; margin-bottom: 2rem; direction: rtl; }
 .rating-group input { display: none; }
-.rating-group label { font-size: 2.5rem; color: #ddd; cursor: pointer; transition: color 0.2s ease; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-.rating-group input:checked ~ label, .rating-group label:hover, .rating-group label:hover ~ label { color: #f7d943; }
+.rating-group label {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.rating-group label svg {
+    width: 2.5rem;
+    height: 2.5rem;
+    fill: none;
+    stroke: #ddd;
+    stroke-width: 1.5;
+    transition: all 0.2s ease;
+}
+.rating-group label:hover {
+    transform: scale(1.1);
+}
+.rating-group input:checked ~ label svg, 
+.rating-group label:hover svg, 
+.rating-group label:hover ~ label svg {
+    fill: #f7d943;
+    stroke: #f7d943;
+}
 .reviews-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
 .reviews-header h3 { margin: 0; }
 .sort-reviews-wrapper { display: flex; align-items: center; gap: 0.5rem; }
@@ -391,8 +410,24 @@ input.error, textarea.error { border-color: var(--accent-red); }
 .review-author.admin { color: var(--secondary); }
 .admin-badge { width: 20px; height: 20px; fill: var(--secondary); }
 .review-rating { display: flex; margin-bottom: 0.75rem; }
-.review-rating .star { font-size: 1.2rem; color: #f7d943; }
-.review-rating .star.empty { color: #ddd; }
+.review-rating .star {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+}
+.review-rating .star svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 1.5;
+}
+.review-rating .star:not(.empty) svg {
+    fill: #f7d943;
+    stroke: #f7d943;
+}
+.review-rating .star.empty svg {
+    fill: none;
+    stroke: #ddd;
+}
 .review-text { color: #555; line-height: 1.7; margin-bottom: 1rem; }
 .review-footer { display: flex; align-items: center; gap: 1rem; font-size: 0.9rem; color: #999; }
 .reply-btn { background: none; border: none; color: var(--primary); font-weight: 600; cursor: pointer; padding: 0; font-size: 0.9rem; }
