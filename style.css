@@ -607,7 +607,7 @@ input.error, textarea.error { border-color: var(--accent-red); }
     position: absolute;
     border-radius: 50%;
     filter: blur(100px); /* Сильное размытие для мягкого эффекта */
-    opacity: 0.2; /* Делаем их полупрозрачными */
+    opacity: 0.5; /* Делаем их полупрозрачными */
     will-change: transform; /* Оптимизация для анимации */
     animation: move 30s infinite alternate; /* Запускаем анимацию движения */
 }
@@ -643,24 +643,6 @@ input.error, textarea.error { border-color: var(--accent-red); }
     opacity: 0.15;
 }
 
-/* Анимация движения */
-@keyframes move {
-    0% {
-        transform: translate(0, 0) scale(1);
-    }
-    25% {
-        transform: translate(100px, -50px) scale(1.1);
-    }
-    50% {
-        transform: translate(-150px, 100px) scale(0.9);
-    }
-    75% {
-        transform: translate(50px, 150px) scale(1.2);
-    }
-    100% {
-        transform: translate(0, 0) scale(1);
-    }
-}
 /* ======================================================= */
 
 
