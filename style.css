@@ -607,7 +607,7 @@ input.error, textarea.error { border-color: var(--accent-red); }
     position: absolute;
     border-radius: 50%;
     filter: blur(100px); /* Сильное размытие для мягкого эффекта */
-    opacity: 0.5; /* Делаем их полупрозрачными */
+    opacity: 0.3; /* Делаем их полупрозрачными */
     will-change: transform; /* Оптимизация для анимации */
     animation: move 30s infinite alternate; /* Запускаем анимацию движения */
 }
