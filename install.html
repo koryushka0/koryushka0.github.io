@@ -3,10 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Охота и Рыбалка - Приложение</title>
+    <title>Охота и Рыбалка - Скачать приложение</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="assets/icon-512.png">
+    
+    <!-- Дополнительные стили только для этой страницы -->
+    <style>
+        .app-landing-section {
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        /* Заголовок и кнопка */
+        .app-hero {
+            max-width: 800px;
+            margin: 0 auto 3rem;
+        }
+
+        .app-hero h1 {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .app-hero .subtitle {
+            font-size: 1.3rem;
+            color: #444;
+            margin-bottom: 2.5rem;
+            font-weight: 600;
+        }
+
+        .download-btn-large {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--primary);
+            color: #fff;
+            padding: 1.2rem 2.5rem;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .download-btn-large:hover {
+            transform: translateY(-3px);
+            background-color: var(--secondary);
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        }
+
+        .download-btn-large svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            fill: currentColor;
+        }
+
+        /* Текстовое описание */
+        .app-description {
+            max-width: 800px;
+            margin: 0 auto 4rem;
+            text-align: left;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .app-description p {
+            margin-bottom: 1.5rem;
+        }
+
+        .app-description p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Инструкция */
+        .install-guide {
+            background: var(--surface);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 3rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .install-guide h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            color: var(--text-dark);
+        }
+
+        .step-list {
+            list-style: none;
+            counter-reset: my-counter;
+        }
+
+        .step-item {
+            position: relative;
+            padding-left: 3.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-item::before {
+            counter-increment: my-counter;
+            content: counter(my-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary);
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            font-weight: 700;
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+            color: var(--text-dark);
+            display: block;
+        }
+
+        .step-desc {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 768px) {
+            .app-hero h1 { font-size: 2rem; }
+            .install-guide { padding: 1.5rem; }
+            .app-description { font-size: 1rem; padding: 0 1rem; }
+        }
+    </style>
 </head>
 <body id="install-page">
 
@@ -28,7 +165,7 @@
                         <li><a href="about.html">О компании</a></li>
                         <li><a href="contacts.html">Контакты</a></li>
                         <li><a href="reviews.html">Отзывы</a></li>
-                        <li><a href="install.html">Приложение</a></li>
+                        <li><a href="install.html" style="color: var(--secondary);">Приложение</a></li>
                     </ul>
                 </nav>
                 <div class="header-icons">
@@ -55,7 +192,7 @@
             <li><a href="catalog.html">Каталог</a></li>
             <li><a href="cart.html">Корзина (<span class="cart-count">0</span>)</a></li>
             <li><a href="wishlist.html">Избранное (<span class="wishlist-count">0</span>)</a></li>
-            <li><a href="install.html">Приложение</a></li>
+            <li><a href="install.html" style="color: var(--secondary);">Приложение</a></li>
         </ul>
         <h4>Информация</h4>
         <ul>
@@ -69,18 +206,57 @@
     <div class="overlay"></div>
 
     <main>
-        <section>
+        <section class="app-landing-section">
             <div class="container">
-                <!-- НАЧАЛО БЛОКА-ЗАГЛУШКИ -->
-                <div class="coming-soon-container animate-on-scroll">
-                    <div class="coming-soon-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h2>Наше приложение в разработке! (●'◡'●)</h2>
-                    <p class="section-subtitle" style="margin-bottom: 2rem;">Мы усердно работаем, чтобы сделать ваше увлечение еще удобнее. Совсем скоро вы сможете скачать наше приложение для Android!</p>
-                    <a href="catalog.html" class="btn">Вернуться в каталог</a>
+                
+                <!-- Блок заголовка и кнопки -->
+                <div class="app-hero animate-on-scroll">
+                    <h1>Мобильное приложение</h1>
+                    <p class="subtitle">Весь ассортимент магазина в вашем кармане.</p>
+                    
+                    <a href="https://github.com/koryushka0/koryushka0.github.io/releases/download/1.0/hunting_n_fishing.apk" class="download-btn-large" download>
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                        Скачать APK для Android
+                    </a>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;">Версия 1.0 • Размер 58.1 МБ • Бесплатно</p>
                 </div>
-                <!-- КОНЕЦ БЛОКА-ЗАГЛУШКИ -->
+
+                <!-- Текстовое описание -->
+                <div class="app-description animate-on-scroll">
+                    <p>
+                        Мы собрали весь наш каталог в удобном мобильном формате, чтобы вы могли готовиться к охоте или рыбалке в любое время и в любом месте. Удобный поиск и фильтрация помогут найти нужную снасть за пару кликов, будь то новый спиннинг, палатка или набор крючков.
+                    </p>
+                    <p>
+                        Ничего лишнего — только товары и быстрое оформление. Добавляйте понравившееся в "Избранное", чтобы не потерять и сравнить позже, и формируйте заказ прямо в телефоне. Это быстрее и удобнее, чем через мобильный браузер.
+                    </p>
+                    <p>
+                        Скачивайте приложение, чтобы всегда иметь под рукой актуальный каталог товаров и первыми узнавать о сезонных обновлениях ассортимента.
+                    </p>
+                </div>
+
+                <!-- Инструкция -->
+                <div class="install-guide animate-on-scroll">
+                    <h2>Как установить приложение?</h2>
+                    <ul class="step-list">
+                        <li class="step-item">
+                            <span class="step-title">Скачайте файл</span>
+                            <span class="step-desc">Нажмите на кнопку "Скачать APK для Android" выше. Файл <b>hunting_n_fishing.apk</b> начнет загружаться на ваше устройство.</span>
+                        </li>
+                        <li class="step-item">
+                            <span class="step-title">Запустите установку</span>
+                            <span class="step-desc">Откройте скачанный файл через панель уведомлений или в папке "Загрузки" ("Downloads") вашего телефона.</span>
+                        </li>
+                        <li class="step-item">
+                            <span class="step-title">Разрешите установку</span>
+                            <span class="step-desc">Если система запросит разрешение на установку приложений из этого источника (браузера), нажмите "Настройки" и включите переключатель "Разрешить".</span>
+                        </li>
+                        <li class="step-item">
+                            <span class="step-title">Готово!</span>
+                            <span class="step-desc">Нажмите "Установить". После завершения иконка приложения появится на вашем главном экране.</span>
+                        </li>
+                    </ul>
+                </div>
+
             </div>
         </section>
     </main>
