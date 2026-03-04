@@ -22,15 +22,6 @@ except ImportError:
     WIN32_AVAILABLE = False
     print("ВНИМАНИЕ: Для чтения старых .doc установите pywin32: pip install pywin32")
 
-# --- ИМПОРТЫ WATCHDOG ---
-try:
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
-    WATCHDOG_AVAILABLE = True
-except ImportError:
-    WATCHDOG_AVAILABLE = False
-    print("ВНИМАНИЕ: Библиотека 'watchdog' не найдена. Установите её: pip install watchdog")
-
 # --- ИМПОРТЫ ДЛЯ OCR ---
 try:
     import pytesseract
@@ -40,7 +31,6 @@ try:
 except ImportError:
     OCR_AVAILABLE = False
 
-# --- ИМПОРТ PyMuPDF ---
 try:
     import fitz  # PyMuPDF
 except ImportError:
@@ -53,16 +43,17 @@ from PyQt6.QtWidgets import (
     QStatusBar, QSplitter, QMenu, QListWidget, QListWidgetItem,
     QCompleter, QStackedWidget, QTextEdit, QPlainTextEdit, QDialog,
     QCheckBox, QComboBox, QFormLayout, QGroupBox, QMessageBox, QSlider,
-    QTabWidget, QFrame, QGridLayout, QScrollArea, QDialogButtonBox, QProgressBar, QAbstractItemView
+    QTabWidget, QFrame, QGridLayout, QScrollArea, QDialogButtonBox,
+    QAbstractItemView, QTimeEdit, QDateTimeEdit, QRadioButton, QButtonGroup
 )
 from PyQt6.QtCore import (
     Qt, QThread, pyqtSignal, QSize, QByteArray, QTimer,
-    QStringListModel, QObject, QUrl, QEasingCurve, QPropertyAnimation
+    QStringListModel, QObject, QUrl, QTime, QDate, QDateTime
 )
 from PyQt6.QtGui import (
     QAction, QCursor, QIcon, QPixmap, QTextOption,
     QTextCursor, QColor, QIntValidator, QDesktopServices,
-    QPainter, QPen, QBrush, QFont, QKeySequence, QShortcut
+    QPainter, QPen, QBrush, QFont
 )
 
 from whoosh.index import create_in, open_dir, EmptyIndexError
@@ -71,6 +62,7 @@ from whoosh.analysis import LanguageAnalyzer
 from whoosh.qparser import MultifieldParser, PhrasePlugin
 from whoosh.highlight import HtmlFormatter, ContextFragmenter
 from whoosh.query import Or, Term, FuzzyTerm
+
 
 # --- ПУТИ ---
 if getattr(sys, 'frozen', False):
@@ -293,7 +285,7 @@ class ConfigManager:
 
     def load_config(self):
         default_config = {
-            "folders": [],  # Теперь это список словарей: {"path": "...", "use_custom": False, "exts": []}
+            "folders": [],
             "global_exts": ALL_SUPPORTED_EXTS.copy(),
             "history": [],
             "ocr_enabled": False,
@@ -303,7 +295,14 @@ class ConfigManager:
             "max_file_size": 50,
             "ocr_dpi": 150,
             "is_dark_theme": True,
-            "is_panel_visible": True
+            "is_panel_visible": True,
+            "auto_sync_enabled": False,
+            "auto_sync_mode": "daily",
+            "auto_sync_time": "14:00",
+            "auto_sync_datetime": "",
+            # --- НОВЫЕ КЛЮЧИ ДЛЯ НЕДЕЛЬНОГО РАСПИСАНИЯ ---
+            "auto_sync_day": 0, # 0 - Понедельник, 6 - Воскресенье
+            "auto_sync_weekly_time": "18:00"
         }
         if not os.path.exists(self.filepath):
             return default_config
@@ -313,7 +312,6 @@ class ConfigManager:
                 config = default_config.copy()
                 config.update(data)
 
-                # Миграция старых конфигов (где папки были строками)
                 new_folders = []
                 for folder in config["folders"]:
                     if isinstance(folder, str):
@@ -593,181 +591,153 @@ def get_allowed_exts_for_path(path, folders_config, global_exts):
                 return global_exts
     return global_exts
 
-if WATCHDOG_AVAILABLE:
-    class ChangeHandler(FileSystemEventHandler):
-        def __init__(self, callback, folders_config, global_exts):
-            self.callback = callback
-            self.folders_config = folders_config
-            self.global_exts = global_exts
-
-        def on_any_event(self, event):
-            if event.is_directory: return
-            filename = os.path.basename(event.src_path)
-
-            # 1. Игнор временных файлов Word и скрытых файлов
-            if filename.startswith('~$') or filename.startswith('.'): return
-
-            # 2. Игнор файлов, расширение которых не включено в настройках папки
-            allowed_exts = get_allowed_exts_for_path(event.src_path, self.folders_config, self.global_exts)
-            if not any(filename.lower().endswith(ext) for ext in allowed_exts):
-                return
-
-            # 3. Игнор фантомных событий открытия/закрытия
-            if event.event_type in ['opened', 'closed', 'accessed']: return
-
-            self.callback(event.event_type, event.src_path)
-
-    class WatchdogService(QObject):
-        changes_detected = pyqtSignal(set, set)
-        _internal_event_signal = pyqtSignal(str, str)
-
-        def __init__(self, folders_config, global_exts):
-            super().__init__()
-            self.folders_config = folders_config
-            self.global_exts = global_exts
-            self.observer = None
-
-            self.pending_new_mod = set()
-            self.pending_deleted = set()
-            self.file_statesCache = {}  # Кэш состояний (mtime, size)
-
-            self._internal_event_signal.connect(self._process_event_in_main_thread)
-
-            self.debounce_timer = QTimer()
-            self.debounce_timer.setSingleShot(True)
-            self.debounce_timer.setInterval(1500)
-            self.debounce_timer.timeout.connect(self.emit_changes)
-
-        def update_config(self, folders_config, global_exts):
-            self.folders_config = folders_config
-            self.global_exts = global_exts
-
-        def start_monitoring(self):
-            if not WATCHDOG_AVAILABLE: return
-            self.stop_monitoring()
-            self.observer = Observer()
-            handler = ChangeHandler(self.handle_event_from_thread, self.folders_config, self.global_exts)
-
-            scheduled = False
-            for f in self.folders_config:
-                folder_path = f["path"]
-                if os.path.exists(folder_path):
-                    self.observer.schedule(handler, folder_path, recursive=True)
-                    scheduled = True
-            if scheduled:
-                try:
-                    self.observer.start()
-                except Exception:
-                    pass
-
-        def stop_monitoring(self):
-            if self.observer:
-                self.observer.stop()
-                self.observer.join()
-                self.observer = None
-
-        def handle_event_from_thread(self, event_type, src_path):
-            self._internal_event_signal.emit(event_type, src_path)
-
-        def _process_event_in_main_thread(self, event_type, src_path):
-            # АНТИ-ФАНТОМ: Проверяем, реально ли изменился файл (размер или дата модификации)
-            if event_type in ['created', 'modified']:
-                try:
-                    stat = os.stat(src_path)
-                    current_state = (stat.st_mtime, stat.st_size)
-                    if self.file_statesCache.get(src_path) == current_state:
-                        return
-                    self.file_statesCache[src_path] = current_state
-                except OSError:
-                    pass
-
-            if event_type == 'deleted':
-                if src_path in self.pending_new_mod:
-                    self.pending_new_mod.remove(src_path)
-                self.pending_deleted.add(src_path)
-                self.file_statesCache.pop(src_path, None)
-            elif event_type in ['created', 'modified', 'moved']:
-                if src_path in self.pending_deleted:
-                    self.pending_deleted.remove(src_path)
-                self.pending_new_mod.add(src_path)
-
-            self.debounce_timer.start()
-
-        def emit_changes(self):
-            if self.pending_new_mod or self.pending_deleted:
-                new_mod = self.pending_new_mod.copy()
-                deleted = self.pending_deleted.copy()
-                self.pending_new_mod.clear()
-                self.pending_deleted.clear()
-                self.changes_detected.emit(new_mod, deleted)
-
 
 # --- ПОТОК ИНДЕКСАЦИИ ---
 class IndexingThread(QThread):
     progress = pyqtSignal(str)
     finished = pyqtSignal(int)
 
-    def __init__(self, search_service, folders_config, global_exts, target_folder=None, files_to_index=None,
-                 files_to_remove=None):
+    def __init__(self, search_service, folders_config, global_exts, mode='full', target_folder=None):
         super().__init__()
         self.search_service = search_service
         self.folders_config = folders_config
         self.global_exts = global_exts
+        self.mode = mode  # 'full', 'sync' или 'folder'
         self.target_folder = target_folder
-        self.files_to_index = files_to_index
-        self.files_to_remove = files_to_remove
-        self.is_incremental = (files_to_index is not None or files_to_remove is not None)
+
+        # Списки для умной синхронизации
+        self.files_to_index = []
+        self.files_to_remove = []
 
     def is_file_allowed(self, filepath):
         allowed = get_allowed_exts_for_path(filepath, self.folders_config, self.global_exts)
         return any(filepath.lower().endswith(ext) for ext in allowed)
 
-    def run(self):
-        # ОТКРЫВАЕМ WORD ОДИН РАЗ ДЛЯ ВСЕХ ФАЙЛОВ!
-        self.search_service.start_batch()
+    def prepare_smart_sync(self):
+        """ Сравнивает файлы на диске с базой Whoosh (Вычисляет Дельту) """
+        ix = open_dir(self.search_service.index_dir)
+        indexed_files = {}
 
+        # 1. Читаем все даты из базы
+        with ix.searcher() as searcher:
+            for doc in searcher.all_stored_fields():
+                dt = doc.get('mod_date')
+
+                # СТАНДАРТИЗАЦИЯ ПУТИ ИЗ БАЗЫ
+                path_key = os.path.normpath(doc['path'])
+                if platform.system() == 'Windows':
+                    path_key = path_key.lower()  # В Windows пути нечувствительны к регистру
+
+                # Сохраняем оригинальный путь (чтобы корректно удалить) и время в ЦЕЛЫХ секундах
+                indexed_files[path_key] = {
+                    'original_path': doc['path'],
+                    'mtime': int(dt.timestamp()) if dt else 0
+                }
+
+        # 2. Читаем все даты с диска
+        current_files = {}
+        for f_conf in self.folders_config:
+            for root, _, files in os.walk(f_conf["path"]):
+                for file in files:
+                    if file.startswith('~$'): continue
+                    filepath = os.path.normpath(os.path.join(root, file))
+                    if self.is_file_allowed(filepath):
+                        try:
+                            # СТАНДАРТИЗАЦИЯ ПУТИ С ДИСКА
+                            path_key = filepath
+                            if platform.system() == 'Windows':
+                                path_key = path_key.lower()
+
+                            current_files[path_key] = {
+                                'original_path': filepath,
+                                'mtime': int(os.path.getmtime(filepath))  # Отбрасываем микросекунды!
+                            }
+                        except OSError:
+                            pass
+
+        # 3. Сравниваем стандартизированные списки
+        for path_key, data in current_files.items():
+            if path_key not in indexed_files:
+                # Файла вообще нет в базе -> Добавляем
+                self.files_to_index.append(data['original_path'])
+            elif data['mtime'] > indexed_files[path_key]['mtime']:
+                # Файл на диске новее (даже на 1 секунду) -> Обновляем
+                self.files_to_index.append(data['original_path'])
+
+        for path_key, data in indexed_files.items():
+            if path_key not in current_files:
+                # Файл есть в базе, но пропал с диска -> Удаляем
+                self.files_to_remove.append(data['original_path'])
+
+    def run(self):
+        self.search_service.start_batch()
         try:
-            if self.is_incremental:
+            # --- РЕЖИМ 1: УМНАЯ СИНХРОНИЗАЦИЯ ---
+            if self.mode == 'sync':
                 if not os.path.exists(self.search_service.index_dir):
-                    self.is_incremental = False
+                    self.mode = 'full'  # Если базы нет, делаем полную
                 else:
-                    self.progress.emit("Подготовка к обновлению индекса...")
+                    self.progress.emit("Анализ изменений на диске...")
+                    self.prepare_smart_sync()
+
+                    if not self.files_to_index and not self.files_to_remove:
+                        self.progress.emit("Все файлы актуальны!")
+                        self.finished.emit(0)
+                        return
+
                     ix = open_dir(self.search_service.index_dir)
                     writer = ix.writer(limitmb=512)
-
                     count = 0
-                    if self.files_to_remove:
-                        for path in self.files_to_remove:
-                            writer.delete_by_term('path', path)
 
-                    if self.files_to_index:
-                        total = len(self.files_to_index)
-                        for i, filepath in enumerate(self.files_to_index):
-                            if not os.path.exists(filepath): continue
-                            if not self.is_file_allowed(filepath): continue
+                    for path in self.files_to_remove:
+                        writer.delete_by_term('path', path)
 
-                            percent = int(((i + 1) / total) * 100)
-                            self.progress.emit(f"Обновление: {os.path.basename(filepath)} ({percent}%)")
+                    total = len(self.files_to_index)
+                    for i, filepath in enumerate(self.files_to_index):
+                        if not os.path.exists(filepath): continue
+                        percent = int(((i + 1) / total) * 100)
+                        self.progress.emit(f"Синхронизация: {os.path.basename(filepath)} ({percent}%)")
 
-                            text = self.search_service.extract_text(filepath)
-                            try:
-                                filesize = os.path.getsize(filepath)
-                                mod_time = os.path.getmtime(filepath)
-                                mod_date = datetime.fromtimestamp(mod_time)
-                                _, file_ext = os.path.splitext(filepath)
-                                writer.update_document(path=filepath, filename=os.path.basename(filepath),
-                                                       filesize=filesize, mod_date=mod_date,
-                                                       file_ext=file_ext.lower(), content=text or "")
-                                count += 1
-                            except OSError:
-                                pass
+                        text = self.search_service.extract_text(filepath)
+                        try:
+                            filesize = os.path.getsize(filepath)
+                            mod_date = datetime.fromtimestamp(os.path.getmtime(filepath))
+                            _, file_ext = os.path.splitext(filepath)
+                            # update_document сам удалит старую копию и вставит новую
+                            writer.update_document(path=filepath, filename=os.path.basename(filepath),
+                                                   filesize=filesize, mod_date=mod_date,
+                                                   file_ext=file_ext.lower(), content=text or "")
+                            count += 1
+                        except OSError:
+                            pass
 
                     self.progress.emit("Сохранение изменений...")
                     writer.commit()
                     self.finished.emit(count)
                     return
 
-            if self.target_folder:
+            if self.mode == 'remove_folder' and self.target_folder:
+                if not os.path.exists(self.search_service.index_dir):
+                    self.finished.emit(0)
+                    return
+
+                self.progress.emit(f"Удаление данных папки из индекса...")
+                ix = open_dir(self.search_service.index_dir)
+                writer = ix.writer(limitmb=512)
+
+                target_norm = os.path.normpath(self.target_folder)
+                with ix.searcher() as searcher:
+                    for doc in searcher.all_stored_fields():
+                        # Если путь документа начинается с нашей папки - стираем его
+                        if os.path.normpath(doc['path']).startswith(target_norm):
+                            writer.delete_by_term('path', doc['path'])
+
+                writer.commit()
+                self.finished.emit(0)  # Передаем 0, так как мы ничего не проиндексировали
+                return
+
+            # --- РЕЖИМ 2: ОДНА ПАПКА ---
+            if self.mode == 'folder' and self.target_folder:
                 self.progress.emit(f"Очистка старых данных папки...")
                 ix = open_dir(self.search_service.index_dir)
                 writer = ix.writer(limitmb=512)
@@ -782,7 +752,7 @@ class IndexingThread(QThread):
                 for root, _, files in os.walk(self.target_folder):
                     for file in files:
                         if file.startswith('~$'): continue
-                        filepath = os.path.join(root, file)
+                        filepath = os.path.normpath(os.path.join(root, file))
                         if self.is_file_allowed(filepath):
                             files_to_add.append(filepath)
 
@@ -794,8 +764,7 @@ class IndexingThread(QThread):
                     text = self.search_service.extract_text(filepath)
                     try:
                         filesize = os.path.getsize(filepath)
-                        mod_time = os.path.getmtime(filepath)
-                        mod_date = datetime.fromtimestamp(mod_time)
+                        mod_date = datetime.fromtimestamp(os.path.getmtime(filepath))
                         _, file_ext = os.path.splitext(filepath)
                         writer.add_document(path=filepath, filename=os.path.basename(filepath),
                                             filesize=filesize, mod_date=mod_date,
@@ -809,6 +778,7 @@ class IndexingThread(QThread):
                 self.finished.emit(count)
                 return
 
+            # --- РЕЖИМ 3: ПОЛНАЯ ПЕРЕИНДЕКСАЦИЯ ---
             self.progress.emit("Подсчет файлов...")
             files_to_add = []
             for f_conf in self.folders_config:
@@ -816,7 +786,7 @@ class IndexingThread(QThread):
                 for root, _, files in os.walk(folder_path):
                     for file in files:
                         if file.startswith('~$'): continue
-                        filepath = os.path.join(root, file)
+                        filepath = os.path.normpath(os.path.join(root, file))
                         if self.is_file_allowed(filepath):
                             files_to_add.append(filepath)
 
@@ -840,8 +810,7 @@ class IndexingThread(QThread):
                 text = self.search_service.extract_text(filepath)
                 try:
                     filesize = os.path.getsize(filepath)
-                    mod_time = os.path.getmtime(filepath)
-                    mod_date = datetime.fromtimestamp(mod_time)
+                    mod_date = datetime.fromtimestamp(os.path.getmtime(filepath))
                     _, file_ext = os.path.splitext(filepath)
                     writer.add_document(path=filepath, filename=os.path.basename(filepath), filesize=filesize,
                                         mod_date=mod_date, file_ext=file_ext.lower(), content=text or "")
@@ -856,9 +825,7 @@ class IndexingThread(QThread):
             traceback.print_exc()
             self.progress.emit(f"Ошибка индексации: {e}")
             self.finished.emit(0)
-
         finally:
-            # ЗАКРЫВАЕМ WORD В ЛЮБОМ СЛУЧАЕ (Даже если была ошибка!)
             self.search_service.end_batch()
 
 # --- ПОТОК ПОИСКА ---
@@ -946,43 +913,6 @@ class ResultItemWidget(QWidget):
         path_label.setObjectName("path_label")
         layout.addLayout(top_layout)
         layout.addWidget(path_label)
-
-class UpdateNotificationBar(QWidget):
-    start_indexing_requested = pyqtSignal()
-    show_details_requested = pyqtSignal()
-    close_requested = pyqtSignal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setObjectName("UpdateBanner")
-        self.setFixedHeight(38)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(15, 0, 15, 0)
-        layout.setSpacing(10)
-
-        self.message_label = QLabel("Обнаружены изменения в файлах")
-        self.btn_update = QPushButton("Обновить индекс")
-        self.btn_update.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_update.clicked.connect(self.start_indexing_requested.emit)
-
-        self.btn_details = QPushButton("Подробнее")
-        self.btn_details.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_details.clicked.connect(self.show_details_requested.emit)
-
-        self.btn_close = QPushButton("✕")
-        self.btn_close.setObjectName("CloseBtn")
-        self.btn_close.setFixedSize(24, 24)
-        self.btn_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn_close.clicked.connect(self.close_requested.emit)
-
-        layout.addWidget(self.message_label)
-        layout.addStretch()
-        layout.addWidget(self.btn_update)
-        layout.addWidget(self.btn_details)
-        layout.addWidget(self.btn_close)
-
-    def set_message(self, count):
-        self.message_label.setText(f"Обнаружено изменений в файлах: {count}")
 
 class ChangesDialog(QDialog):
     def __init__(self, new_changed, deleted, is_dark, parent=None):
@@ -1209,13 +1139,12 @@ class SettingsDialog(QDialog):
     def __init__(self, config, is_dark, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Глобальные настройки")
-        self.resize(450, 580)  # Чуть-чуть увеличили высоту окна под новую настройку
+        self.resize(520, 680)  # Чуть увеличили окно
         self.setStyleSheet(DARK_STYLE if is_dark else LIGHT_STYLE)
         self.config = config
 
         layout = QVBoxLayout(self)
 
-        # Типы файлов по умолчанию
         ext_group = QGroupBox("Типы файлов по умолчанию")
         ext_layout = QGridLayout(ext_group)
         self.global_ext_cbs = {}
@@ -1264,30 +1193,105 @@ class SettingsDialog(QDialog):
             self.lang_combo.setCurrentText(current_lang)
         lang_layout.addWidget(self.lang_combo)
 
-        # --- НОВАЯ НАСТРОЙКА DPI ---
         dpi_layout = QHBoxLayout()
         dpi_layout.addWidget(QLabel("Разрешение (DPI):"))
         self.dpi_edit = QLineEdit()
-        # Ограничиваем ввод от 72 до 1200 DPI (защита от дурака)
         self.dpi_edit.setValidator(QIntValidator(72, 1200))
         self.dpi_edit.setText(str(config.get("ocr_dpi", 150)))
-        self.dpi_edit.setToolTip("150 — идеальный баланс. 300+ для мелкого шрифта (сильно замедляет индексацию).")
         dpi_layout.addWidget(self.dpi_edit)
 
         ocr_layout.addWidget(self.ocr_cb)
         ocr_layout.addWidget(QLabel("Путь к Tesseract:"))
         ocr_layout.addLayout(path_layout)
         ocr_layout.addLayout(lang_layout)
-        ocr_layout.addLayout(dpi_layout)  # Добавляем DPI в окно
+        ocr_layout.addLayout(dpi_layout)
         layout.addWidget(ocr_group)
 
-        view_group = QGroupBox("Внешний вид")
-        view_layout = QFormLayout(view_group)
-        self.font_size_edit = QLineEdit()
-        self.font_size_edit.setValidator(QIntValidator(6, 72))
-        self.font_size_edit.setText(str(config.get("font_size", 13)))
-        view_layout.addRow("Размер шрифта (чтение):", self.font_size_edit)
-        layout.addWidget(view_group)
+        # --- БЛОК ПЛАНИРОВЩИКА С НЕДЕЛЬНЫМ ГРАФИКОМ ---
+        sync_group = QGroupBox("Автоматическое обновление базы")
+        sync_layout = QVBoxLayout(sync_group)
+
+        self.sync_cb = QCheckBox("Включить обновление по расписанию")
+        self.sync_cb.setChecked(config.get("auto_sync_enabled", False))
+        self.sync_cb.toggled.connect(self.toggle_sync_options)
+        sync_layout.addWidget(self.sync_cb)
+
+        self.sync_options_widget = QWidget()
+        sync_opt_layout = QVBoxLayout(self.sync_options_widget)
+        sync_opt_layout.setContentsMargins(20, 0, 0, 0)
+
+        self.radio_group = QButtonGroup(self)
+        self.radio_daily = QRadioButton("Каждый день в:")
+        self.radio_weekly = QRadioButton("Каждую неделю:")  # <--- НОВАЯ КНОПКА
+        self.radio_once = QRadioButton("Один раз (с календарем):")
+
+        self.radio_group.addButton(self.radio_daily)
+        self.radio_group.addButton(self.radio_weekly)
+        self.radio_group.addButton(self.radio_once)
+
+        # 1. Ежедневно
+        daily_layout = QHBoxLayout()
+        daily_layout.addWidget(self.radio_daily)
+        self.time_edit = QTimeEdit()
+        self.time_edit.setDisplayFormat("HH:mm")
+        default_time = QTime.fromString(config.get("auto_sync_time", "14:00"), "HH:mm")
+        self.time_edit.setTime(default_time if default_time.isValid() else QTime(14, 0))
+        daily_layout.addWidget(self.time_edit)
+        daily_layout.addStretch()
+
+        # 2. Еженедельно (НОВОЕ)
+        weekly_layout = QHBoxLayout()
+        weekly_layout.addWidget(self.radio_weekly)
+        self.weekly_day_combo = QComboBox()
+        self.weekly_day_combo.addItems(
+            ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"])
+        self.weekly_day_combo.setCurrentIndex(config.get("auto_sync_day", 0))
+
+        self.weekly_time_edit = QTimeEdit()
+        self.weekly_time_edit.setDisplayFormat("HH:mm")
+        wt = QTime.fromString(config.get("auto_sync_weekly_time", "18:00"), "HH:mm")
+        self.weekly_time_edit.setTime(wt if wt.isValid() else QTime(18, 0))
+
+        weekly_layout.addWidget(self.weekly_day_combo)
+        weekly_layout.addWidget(self.weekly_time_edit)
+        weekly_layout.addStretch()
+
+        # 3. Единожды
+        once_layout = QHBoxLayout()
+        once_layout.addWidget(self.radio_once)
+        self.datetime_edit = QDateTimeEdit()
+        self.datetime_edit.setCalendarPopup(True)
+        self.datetime_edit.setDisplayFormat("dd.MM.yyyy HH:mm")
+
+        saved_dt_str = config.get("auto_sync_datetime", "")
+        if saved_dt_str:
+            try:
+                dt = datetime.fromisoformat(saved_dt_str)
+                self.datetime_edit.setDateTime(QDateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute))
+            except ValueError:
+                self.datetime_edit.setDateTime(QDateTime.currentDateTime())
+        else:
+            self.datetime_edit.setDateTime(QDateTime.currentDateTime())
+
+        once_layout.addWidget(self.datetime_edit)
+        once_layout.addStretch()
+
+        sync_opt_layout.addLayout(daily_layout)
+        sync_opt_layout.addLayout(weekly_layout)
+        sync_opt_layout.addLayout(once_layout)
+
+        # Восстанавливаем выбранный режим
+        mode = config.get("auto_sync_mode", "daily")
+        if mode == "once":
+            self.radio_once.setChecked(True)
+        elif mode == "weekly":
+            self.radio_weekly.setChecked(True)
+        else:
+            self.radio_daily.setChecked(True)
+
+        sync_layout.addWidget(self.sync_options_widget)
+        layout.addWidget(sync_group)
+        self.toggle_sync_options(self.sync_cb.isChecked())
 
         maint_group = QGroupBox("Обслуживание")
         maint_layout = QHBoxLayout(maint_group)
@@ -1302,6 +1306,9 @@ class SettingsDialog(QDialog):
         btn_box.accepted.connect(self.accept)
         btn_box.rejected.connect(self.reject)
         layout.addWidget(btn_box)
+
+    def toggle_sync_options(self, checked):
+        self.sync_options_widget.setEnabled(checked)
 
     def browse_tesseract(self):
         file, _ = QFileDialog.getOpenFileName(self, "Укажите tesseract.exe", "", "Executable (*.exe);;All Files (*)")
@@ -1326,7 +1333,6 @@ class SettingsDialog(QDialog):
                 QMessageBox.critical(self, "Ошибка", f"Не удалось очистить: {e}")
 
     def get_settings(self):
-        # Безопасное чтение числовых параметров (Защита от дурака)
         try:
             font_s = int(self.font_size_edit.text())
         except ValueError:
@@ -1337,13 +1343,24 @@ class SettingsDialog(QDialog):
         except ValueError:
             max_s = 50
 
-        # Читаем наш новый DPI
         try:
             dpi_s = int(self.dpi_edit.text())
         except ValueError:
-            dpi_s = 150  # Значение по умолчанию, если поле сломано
+            dpi_s = 150
 
         global_exts = [ext for ext, cb in self.global_ext_cbs.items() if cb.isChecked()]
+
+        # Определяем режим
+        if self.radio_once.isChecked():
+            mode = "once"
+        elif self.radio_weekly.isChecked():
+            mode = "weekly"
+        else:
+            mode = "daily"
+
+        qdt = self.datetime_edit.dateTime()
+        dt_str = datetime(qdt.date().year(), qdt.date().month(), qdt.date().day(),
+                          qdt.time().hour(), qdt.time().minute()).isoformat()
 
         return {
             "global_exts": global_exts,
@@ -1352,7 +1369,13 @@ class SettingsDialog(QDialog):
             "ocr_lang": self.lang_combo.currentText(),
             "font_size": font_s,
             "max_file_size": max_s,
-            "ocr_dpi": dpi_s  # Сохраняем в общий конфиг!
+            "ocr_dpi": dpi_s,
+            "auto_sync_enabled": self.sync_cb.isChecked(),
+            "auto_sync_mode": mode,
+            "auto_sync_time": self.time_edit.time().toString("HH:mm"),
+            "auto_sync_datetime": dt_str,
+            "auto_sync_day": self.weekly_day_combo.currentIndex(),
+            "auto_sync_weekly_time": self.weekly_time_edit.time().toString("HH:mm")
         }
 
 # --- ПРЕДПРОСМОТР ---
@@ -1549,12 +1572,9 @@ class MainWindow(QMainWindow):
 
         self.search_thread = None
         self.indexing_thread = None
-        self.watchdog_service = None
 
         self.current_results = []
         self.preview_windows = []
-        self.pending_new_files = set()
-        self.pending_deleted_files = set()
 
         self.sun_icon = b64_to_icon(SUN_ICON_DARK_B64)
         self.moon_icon = b64_to_icon(MOON_ICON_LIGHT_B64)
@@ -1589,11 +1609,10 @@ class MainWindow(QMainWindow):
         self.spinner_idx = 0
         self.current_status_text = ""
 
-        if WATCHDOG_AVAILABLE:
-            self.watchdog_service = WatchdogService(self.folders_config, self.global_exts)
-            self.watchdog_service.changes_detected.connect(self.on_changes_detected)
-            if os.path.exists(INDEX_DIR) and self.folders_config:
-                QTimer.singleShot(1000, self.watchdog_service.start_monitoring)
+        # --- ТАЙМЕР ПЛАНИРОВЩИКА (Проверяет каждую минуту) ---
+        self.scheduler_timer = QTimer()
+        self.scheduler_timer.timeout.connect(self.check_schedule)
+        self.scheduler_timer.start(60000)
 
     def apply_config_to_service(self):
         self.search_service.update_config(
@@ -1662,10 +1681,10 @@ class MainWindow(QMainWindow):
         options_layout.addWidget(self.fuzzy_cb)
         main_layout.addLayout(options_layout)
 
-        # --- КНОПКА ВОЗВРАТА ПАНЕЛИ (ПО УМОЛЧАНИЮ СКРЫТА) ---
+        # --- КНОПКА ВОЗВРАТА ПАНЕЛИ ---
         self.show_panel_btn = QPushButton("❯")
         self.show_panel_btn.setObjectName("TumblerBtn")
-        self.show_panel_btn.setFixedSize(24, 24)
+        self.show_panel_btn.setFixedSize(28, 28)
         self.show_panel_btn.setToolTip("Показать панель папок")
         self.show_panel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.show_panel_btn.hide()
@@ -1682,7 +1701,7 @@ class MainWindow(QMainWindow):
 
         self.toggle_panel_btn = QPushButton("❮")
         self.toggle_panel_btn.setObjectName("TumblerBtn")
-        self.toggle_panel_btn.setFixedSize(24, 24)
+        self.toggle_panel_btn.setFixedSize(28, 28)
         self.toggle_panel_btn.setToolTip("Скрыть панель папок")
         self.toggle_panel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -1699,13 +1718,17 @@ class MainWindow(QMainWindow):
         self.folder_list_widget.itemDoubleClicked.connect(self.open_folder_from_list)
 
         folder_buttons_layout = QHBoxLayout()
-        self.add_folder_button = QPushButton("Добавить папку")  # Сделал кнопку шире, раз она теперь одна
+        self.add_folder_button = QPushButton("Добавить папку")
         folder_buttons_layout.addWidget(self.add_folder_button)
+
+        self.sync_button = QPushButton("Актуализировать базу")
+
         self.reindex_button = QPushButton("Полная переиндексация")
 
         folder_layout.addLayout(folder_header_layout)
         folder_layout.addWidget(self.folder_list_widget)
         folder_layout.addLayout(folder_buttons_layout)
+        folder_layout.addWidget(self.sync_button)
         folder_layout.addWidget(self.reindex_button)
 
         # --- ПРАВАЯ ПАНЕЛЬ С РЕЗУЛЬТАТАМИ ---
@@ -1761,25 +1784,65 @@ class MainWindow(QMainWindow):
         middle_layout.addWidget(main_splitter)
         main_layout.addLayout(middle_layout)
 
-        # --- СТАТУС БАР И БАННЕР ---
-        self.separator_line = QFrame()
-        self.separator_line.setFrameShape(QFrame.Shape.HLine)
-        self.separator_line.hide()
-        main_layout.addWidget(self.separator_line)
-
-        self.notification_bar = UpdateNotificationBar(self)
-        self.notification_bar.start_indexing_requested.connect(self.on_banner_update_click)
-        self.notification_bar.show_details_requested.connect(self.on_banner_details_click)
-        self.notification_bar.close_requested.connect(self.on_banner_close_click)
-        self.notification_bar.hide()
-        main_layout.addWidget(self.notification_bar)
-
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.setSizeGripEnabled(False)
         self.status_label = QLabel("")
         self.status_label.setContentsMargins(5, 0, 5, 0)
         self.status_bar.addWidget(self.status_label, 1)
+
+    # --- ЛОГИКА ПЛАНИРОВЩИКА ---
+    def check_schedule(self):
+        if not self.config.get("auto_sync_enabled"): return
+        if self.indexing_thread and self.indexing_thread.isRunning(): return
+
+        mode = self.config.get("auto_sync_mode", "daily")
+        now = datetime.now()
+        current_hm = now.strftime("%H:%M")
+
+        # Анти-дребезг: чтобы таймер не запустил процесс дважды за одну минуту
+        if getattr(self, '_last_sync_time', None) == current_hm:
+            return
+
+        should_sync = False
+
+        if mode == "daily":
+            if current_hm == self.config.get("auto_sync_time", "14:00"):
+                should_sync = True
+
+        elif mode == "weekly":
+            # now.weekday() возвращает: 0 - ПН, 1 - ВТ ... 6 - ВС
+            target_day = self.config.get("auto_sync_day", 0)
+            target_time = self.config.get("auto_sync_weekly_time", "18:00")
+            if now.weekday() == target_day and current_hm == target_time:
+                should_sync = True
+
+        elif mode == "once":
+            target_dt_str = self.config.get("auto_sync_datetime", "")
+            if target_dt_str:
+                try:
+                    target_dt = datetime.fromisoformat(target_dt_str)
+                    if now.date() == target_dt.date() and now.hour == target_dt.hour and now.minute == target_dt.minute:
+                        should_sync = True
+                        # Выключаем автообновление, т.к. оно было "на один раз"
+                        self.config["auto_sync_enabled"] = False
+                        self.save_current_config()
+                except ValueError:
+                    pass
+
+        if should_sync:
+            self._last_sync_time = current_hm
+            self.start_smart_sync()
+
+    def start_smart_sync(self):
+        if not self.folders_config: return
+        self.set_buttons_enabled(False)
+        self.start_spinner()
+
+        self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts, mode='sync')
+        self.indexing_thread.progress.connect(self.set_status_message)
+        self.indexing_thread.finished.connect(self.on_indexing_finished)
+        self.indexing_thread.start()
 
     def set_status_message(self, text):
         self.current_status_text = text
@@ -1847,6 +1910,8 @@ class MainWindow(QMainWindow):
         self.stats_button.clicked.connect(self.open_stats)
         self.add_folder_button.clicked.connect(self.add_folder)
         self.reindex_button.clicked.connect(self.start_full_indexing)
+        self.sync_button.clicked.connect(self.start_smart_sync)
+
         self.results_list.currentItemChanged.connect(self.display_snippets)
         self.results_list.itemDoubleClicked.connect(self.open_file_from_list)
         self.results_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -1899,16 +1964,15 @@ class MainWindow(QMainWindow):
     def start_single_folder_indexing(self, path):
         self.set_buttons_enabled(False)
         self.start_spinner()
-        if self.watchdog_service: self.watchdog_service.stop_monitoring()
 
         self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts,
-                                              target_folder=path)
+                                              mode='folder', target_folder=path)
         self.indexing_thread.progress.connect(self.set_status_message)
         self.indexing_thread.finished.connect(self.on_indexing_finished)
         self.indexing_thread.start()
 
     def add_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Выберите папку")
+        folder = QFileDialog.getExistingDirectory(self, "Выберите папку", "", QFileDialog.Option.DontUseNativeDialog)
         if folder and not any(f["path"] == folder for f in self.folders_config):
             self.folders_config.append({"path": folder, "use_custom": False, "exts": []})
             self.folder_list_widget.addItem(folder)
@@ -1954,10 +2018,10 @@ class MainWindow(QMainWindow):
 
             self.set_buttons_enabled(False)
             self.start_spinner()
-            if self.watchdog_service: self.watchdog_service.stop_monitoring()
 
+            # ИСПРАВЛЕНИЕ: Вызываем с режимом 'remove_folder', а не 'folder'
             self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts,
-                                                  target_folder=path)
+                                                  mode='remove_folder', target_folder=path)
             self.indexing_thread.progress.connect(self.set_status_message)
             self.indexing_thread.finished.connect(self.on_indexing_finished)
             self.indexing_thread.start()
@@ -1966,40 +2030,6 @@ class MainWindow(QMainWindow):
         path = item.text()
         if os.path.exists(path):
             QDesktopServices.openUrl(QUrl.fromLocalFile(path))
-
-    def on_changes_detected(self, new_mod, deleted):
-        self.pending_new_files.update(new_mod)
-        self.pending_deleted_files.update(deleted)
-        count = len(self.pending_new_files) + len(self.pending_deleted_files)
-        self.notification_bar.set_message(count)
-        self.separator_line.show()
-        self.notification_bar.show()
-
-    def on_banner_update_click(self):
-        self.notification_bar.hide()
-        self.separator_line.hide()
-        files_idx = list(self.pending_new_files)
-        files_del = list(self.pending_deleted_files)
-        self.pending_new_files.clear()
-        self.pending_deleted_files.clear()
-
-        self.set_buttons_enabled(False)
-        self.start_spinner()
-        if self.watchdog_service: self.watchdog_service.stop_monitoring()
-
-        self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts,
-                                              files_to_index=files_idx, files_to_remove=files_del)
-        self.indexing_thread.progress.connect(self.set_status_message)
-        self.indexing_thread.finished.connect(self.on_indexing_finished)
-        self.indexing_thread.start()
-
-    def on_banner_details_click(self):
-        dlg = ChangesDialog(list(self.pending_new_files), list(self.pending_deleted_files), self.is_dark_theme, self)
-        dlg.exec()
-
-    def on_banner_close_click(self):
-        self.notification_bar.hide()
-        self.separator_line.hide()
 
     def open_stats(self):
         if not os.path.exists(INDEX_DIR):
@@ -2011,12 +2041,9 @@ class MainWindow(QMainWindow):
 
     def start_full_indexing(self):
         if not self.folders_config: self.update_status_bar(); return
-        self.notification_bar.hide()
-        self.separator_line.hide()
-        if self.watchdog_service: self.watchdog_service.stop_monitoring()
         self.set_buttons_enabled(False)
         self.start_spinner()
-        self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts)
+        self.indexing_thread = IndexingThread(self.search_service, self.folders_config, self.global_exts, mode='full')
         self.indexing_thread.progress.connect(self.set_status_message)
         self.indexing_thread.finished.connect(self.on_indexing_finished)
         self.indexing_thread.start()
@@ -2025,9 +2052,6 @@ class MainWindow(QMainWindow):
         self.set_buttons_enabled(True)
         self.stop_spinner()
         self.set_status_message(f"Операция завершена! Обработано {file_count} файлов.")
-        if self.watchdog_service:
-            self.watchdog_service.update_config(self.folders_config, self.global_exts)
-            self.watchdog_service.start_monitoring()
 
     def perform_search(self):
         self.search_input.setEnabled(False)
@@ -2217,8 +2241,6 @@ class MainWindow(QMainWindow):
             for window in self.preview_windows:
                 if window.isVisible(): window.update_font(self.config["font_size"])
 
-            if self.watchdog_service:
-                self.watchdog_service.update_config(self.folders_config, self.global_exts)
             self.set_status_message("Настройки сохранены!")
 
     def save_current_config(self):
@@ -2242,7 +2264,7 @@ class MainWindow(QMainWindow):
                 self.set_status_message("Ожидание поискового запроса...")
 
     def set_buttons_enabled(self, enabled):
-        for btn in [self.add_folder_button, self.search_input, self.reindex_button]:
+        for btn in [self.add_folder_button, self.search_input, self.reindex_button, self.sync_button]:
             btn.setEnabled(enabled)
 
     def toggle_theme(self):
@@ -2338,9 +2360,6 @@ class MainWindow(QMainWindow):
                 event.ignore()
                 return
 
-        if self.watchdog_service:
-            self.watchdog_service.stop_monitoring()
-
         for window in self.preview_windows:
             try:
                 window.close()
@@ -2349,7 +2368,6 @@ class MainWindow(QMainWindow):
 
         self.save_current_config()
         event.accept()
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
